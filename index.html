@@ -28,7 +28,7 @@
     html, body {
       width: 100%;
       max-width: 100vw;
-      overflow-x: hidden; /* prevents horizontal scrolling across all screens */
+      overflow-x: hidden;
       background-color: var(--bg-color);
       color: var(--text-color);
     }
@@ -78,7 +78,6 @@
       color: #ffffff;
     }
 
-    /* search and filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -128,7 +127,6 @@
       border-color: var(--accent);
     }
 
-    /* responsive grid layout */
     .dashboard-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -138,11 +136,10 @@
 
     @media (min-width: 768px) {
       .dashboard-grid {
-        grid-template-columns: 310px minmax(0, 1fr); /* minmax prevents flex/grid blowout on desktop */
+        grid-template-columns: 310px minmax(0, 1fr);
       }
     }
 
-    /* preview card */
     .preview-card {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -177,14 +174,14 @@
       height: 100%;
     }
 
-    /* sliders / toggles */
+    /* switches panel */
     .controls-panel {
       width: 100%;
       display: flex;
       flex-direction: column;
       gap: 10px;
       background: rgba(255, 255, 255, 0.6);
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: var(--radius-md);
       border: 1px solid rgba(244, 194, 194, 0.3);
     }
@@ -193,13 +190,51 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: var(--text-color);
     }
 
-    .control-item input[type="range"] {
-      width: 100px;
-      accent-color: var(--accent);
+    /* custom toggle switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #e0d0d5;
+      transition: .2s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
     }
 
     .btn-sync {
@@ -217,13 +252,12 @@
 
     .btn-sync:hover { background: var(--accent-hover); }
 
-    /* category carousels */
     .carousel-section {
       display: flex;
       flex-direction: column;
       gap: 14px;
       width: 100%;
-      min-width: 0; /* prevents flex child overflow on web */
+      min-width: 0;
     }
 
     .category-group {
@@ -342,15 +376,21 @@
           <canvas id="outfit-canvas" width="300" height="330"></canvas>
         </div>
 
-        <!-- sliders for bra and tights -->
+        <!-- simple switches for bra & tights -->
         <div class="controls-panel">
           <div class="control-item">
             <span>push-up bra</span>
-            <input type="range" id="bra-slider" min="0" max="1" step="0.1" value="0" oninput="drawOutfitCanvas()" />
+            <label class="switch">
+              <input type="checkbox" id="bra-switch">
+              <span class="slider"></span>
+            </label>
           </div>
           <div class="control-item">
-            <span>tights opacity</span>
-            <input type="range" id="tights-slider" min="0" max="0.8" step="0.1" value="0" oninput="drawOutfitCanvas()" />
+            <span>tights</span>
+            <label class="switch">
+              <input type="checkbox" id="tights-switch">
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
 
@@ -544,7 +584,6 @@
     }
 
     function selectItem(category, url, name, element) {
-      // DRESS vs TOP/BOTTOM LOGIC
       if (category === 'dresses') {
         selectedOutfit.top = null;
         selectedOutfit.bottom = null;
@@ -554,7 +593,6 @@
 
       selectedOutfit[category] = { url, name };
 
-      // refresh carousel selection highlights
       applyFilters();
       drawOutfitCanvas();
     }
@@ -586,100 +624,8 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      const centerX = rect.width / 2;
-
-      // 1. DRAW PERSON PNG BASE
+      // 1. DRAW PERSON PNG BASE (CENTERED)
       await new Promise((resolve) => {
         const personImg = new Image();
         personImg.src = PERSON_IMAGE_URL;
-        personImg.onload = () => {
-          const personHeight = 310;
-          const personWidth = 140;
-          const xPos = (rect.width - personWidth) / 2;
-          ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
-          resolve();
-        };
-        personImg.onerror = () => resolve();
-      });
-
-      // 2. SLIDERS: PUSH-UP BRA & TIGHTS
-      const braVal = parseFloat(document.getElementById("bra-slider").value);
-      const tightsVal = parseFloat(document.getElementById("tights-slider").value);
-
-      // Tights layer (drawn over legs)
-      if (tightsVal > 0) {
-        ctx.save();
-        ctx.fillStyle = `rgba(30, 20, 25, ${tightsVal})`; // sheer black/brown tights tint
-        ctx.beginPath();
-        ctx.roundRect(centerX - 16, 140, 12, 105, 4); // left leg
-        ctx.roundRect(centerX + 4, 140, 12, 105, 4);  // right leg
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Push-up bra accent (subtle chest lift tint)
-      if (braVal > 0) {
-        ctx.save();
-        ctx.fillStyle = `rgba(244, 194, 194, ${braVal * 0.4})`;
-        ctx.beginPath();
-        ctx.arc(centerX - 10, 68 - (braVal * 3), 10 + (braVal * 2), 0, Math.PI);
-        ctx.arc(centerX + 10, 68 - (braVal * 3), 10 + (braVal * 2), 0, Math.PI);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // 3. LAYER CLOTHING
-      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
-
-      for (const layer of layers) {
-        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
-          await new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = selectedOutfit[layer].url;
-            img.onload = () => {
-              let size = 110;
-              let yPos = 45;
-              let xPos = (rect.width - size) / 2;
-
-              if (layer === 'dresses') {
-                size = 140;
-                yPos = 45;
-              }
-              if (layer === 'top') { 
-                size = 110; 
-                yPos = 45; 
-              }
-              if (layer === 'bottom') { 
-                size = 145; 
-                yPos = 148; 
-              }
-              if (layer === 'shoes') { 
-                size = 80; 
-                yPos = 245; 
-              }
-              if (layer === 'outerwear') { 
-                size = 120; 
-                yPos = 55;
-                xPos = rect.width - size - 10; // shifted to the right
-              }
-
-              ctx.drawImage(img, xPos, yPos, size, size);
-              resolve();
-            };
-            img.onerror = () => resolve();
-          });
-        }
-      }
-    }
-
-    function saveOutfit() {
-      const canvas = document.getElementById('outfit-canvas');
-      const imageDataUrl = canvas.toDataURL('image/png');
-      alert("outfit compiled!");
-    }
-
-    fetchFromNotion();
-  </script>
-</body>
-</html>
+        personImg.onload =
