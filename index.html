@@ -442,7 +442,7 @@
       drawOutfitCanvas();
     }
 
-   async function drawOutfitCanvas() {
+  async function drawOutfitCanvas() {
   const canvas = document.getElementById('outfit-canvas');
   const ctx = canvas.getContext('2d');
   
@@ -472,7 +472,6 @@
   });
 
   // 2. LAYER CLOTHING
-  // Order: bottoms -> tops -> shoes -> outerwear (side-positioned)
   const layers = ['bottom', 'top', 'shoes', 'outerwear'];
 
   for (const layer of layers) {
@@ -482,26 +481,29 @@
         img.crossOrigin = "anonymous";
         img.src = selectedOutfit[layer].url;
         img.onload = () => {
-          let size = 130;
-          let yPos = 50;
-          let xPos = (rect.width - size) / 2; // default center alignment
+          let size = 110;
+          let yPos = 45;
+          let xPos = (rect.width - size) / 2;
 
           if (layer === 'top') { 
-            size = 135; 
-            yPos = 42; // slightly raised top position
+            size = 110; // made tops slightly smaller
+            yPos = 45; 
+            xPos = (rect.width - size) / 2;
           }
           if (layer === 'bottom') { 
-            size = 130; 
-            yPos = 135; // lowered bottoms so top doesn't cover them
+            size = 145; // larger relative size for bottoms
+            yPos = 148; // pushed lower down
+            xPos = (rect.width - size) / 2;
           }
           if (layer === 'shoes') { 
-            size = 85; 
-            yPos = 235; 
+            size = 80; 
+            yPos = 245; 
+            xPos = (rect.width - size) / 2;
           }
           if (layer === 'outerwear') { 
-            size = 130; 
+            size = 120; 
             yPos = 55;
-            xPos = rect.width - size - 10; // shifted to the right side of the canvas
+            xPos = rect.width - size - 10; // right side
           }
 
           ctx.drawImage(img, xPos, yPos, size, size);
@@ -512,7 +514,6 @@
     }
   }
 }
-
     function saveOutfit() {
       const canvas = document.getElementById('outfit-canvas');
       const imageDataUrl = canvas.toDataURL('image/png');
