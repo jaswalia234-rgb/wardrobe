@@ -727,40 +727,31 @@ async function saveOutfit() {
   const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
   const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
 
-  // 1. Map selected items to Notion Relation page IDs
+  // 1. Get linked Wardrobe Page IDs
   const relationIds = Object.values(selectedOutfit)
     .filter(item => item !== null && item.id)
     .map(item => ({ id: item.id }));
 
-  // 2. Format image file objects (distinguishing Notion-hosted S3 vs External URLs)
-  const fileObjects = Object.values(selectedOutfit)
+  // 2. Filter ONLY valid external images (non-Notion / non-S3) for "outfit image"
+  const validExternalFiles = Object.values(selectedOutfit)
     .filter(item => item !== null && item.url)
     .map(item => {
       let rawUrl = item.url;
       if (rawUrl.includes("url=")) {
         rawUrl = decodeURIComponent(rawUrl.split("url=")[1]);
       }
-
-      // If it's hosted by Notion / S3, send as type 'file'
-      const isNotionHosted = rawUrl.includes("notion.so") || rawUrl.includes("amazonaws.com") || rawUrl.includes("prod-files-secure");
-
-      if (isNotionHosted) {
-        return {
-          name: item.name,
-          type: "file",
-          file: { url: rawUrl }
-        };
-      } else {
-        return {
-          name: item.name,
-          type: "external",
-          external: { url: rawUrl }
-        };
-      }
-    });
+      return { rawUrl, name: item.name };
+    })
+    .filter(f => !f.rawUrl.includes("notion.so") && !f.rawUrl.includes("amazonaws.com") && !f.rawUrl.includes("prod-files-secure"))
+    .map(f => ({
+      name: f.name,
+      type: "external",
+      external: { url: f.rawUrl }
+    }));
 
   const todayISO = new Date().toISOString().split('T')[0];
 
+  // Build Notion Payload
   const payload = {
     parent: { database_id: OUTFIT_LOG_DB_ID },
     properties: {
@@ -775,9 +766,9 @@ async function saveOutfit() {
       "outfit items": {
         relation: relationIds
       },
-      "outfit image": {
-        files: fileObjects
-      }
+      ...(validExternalFiles.length > 0 ? {
+        "outfit image": { files: validExternalFiles }
+      } : {})
     },
     children: [
       {
@@ -812,12 +803,12 @@ async function saveOutfit() {
       alert("outfit saved cleanly to notion!");
     } else {
       console.error("notion error details:", resData);
-      
+
       // Retry with title property lowercase if Name title key fails
       if (resData.message && resData.message.includes("Name is not a property")) {
         payload.properties["title"] = payload.properties["Name"];
         delete payload.properties["Name"];
-        
+
         const retryRes = await fetch(proxiedUrl, {
           method: "POST",
           headers: {
@@ -827,7 +818,7 @@ async function saveOutfit() {
           },
           body: JSON.stringify(payload)
         });
-        
+
         if (retryRes.ok) {
           alert("outfit saved cleanly to notion!");
           return;
