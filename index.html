@@ -337,7 +337,7 @@ async function drawOutfitCanvas() {
   const canvas = document.getElementById('outfit-canvas');
   const ctx = canvas.getContext('2d');
   
-  // handle high-DPI (retina) displays for sharp image quality
+  // High-DPI (Retina) screen scaling for sharp graphics
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   
@@ -349,7 +349,44 @@ async function drawOutfitCanvas() {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, rect.width, rect.height);
 
-  const layers = ['shoes', 'bottom', 'top', 'outerwear'];
+  const centerX = rect.width / 2;
+
+  // 1. Draw mannequin base silhouette in soft pink/grey tint
+  ctx.save();
+  ctx.fillStyle = "#f3e1e4";
+  ctx.strokeStyle = "#e8c5cb";
+  ctx.lineWidth = 1.5;
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(centerX, 42, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Neck
+  ctx.fillRect(centerX - 3, 56, 6, 10);
+
+  // Torso / Upper body
+  ctx.beginPath();
+  ctx.moveTo(centerX - 18, 66); // left shoulder
+  ctx.lineTo(centerX + 18, 66); // right shoulder
+  ctx.lineTo(centerX + 12, 145); // right waist/hip
+  ctx.lineTo(centerX - 12, 145); // left waist/hip
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Legs
+  ctx.fillRect(centerX - 10, 145, 7, 100); // left leg
+  ctx.fillRect(centerX + 3, 145, 7, 100);  // right leg
+
+  // Arms
+  ctx.fillRect(centerX - 24, 68, 5, 80);  // left arm
+  ctx.fillRect(centerX + 19, 68, 5, 80);  // right arm
+  ctx.restore();
+
+  // 2. Layer clothing items over the mannequin
+  const layers = ['bottom', 'top', 'outerwear', 'shoes'];
 
   for (const layer of layers) {
     if (selectedOutfit[layer] && selectedOutfit[layer].url) {
@@ -358,17 +395,16 @@ async function drawOutfitCanvas() {
         img.crossOrigin = "anonymous";
         img.src = selectedOutfit[layer].url;
         img.onload = () => {
-          // preserve 1:1 square proportions (size x size) centered horizontally
           let size = 120;
-          let yPos = 40;
+          let yPos = 60;
 
-          if (layer === 'shoes') { size = 100; yPos = 200; }
-          if (layer === 'bottom') { size = 120; yPos = 110; }
-          if (layer === 'top') { size = 130; yPos = 30; }
-          if (layer === 'outerwear') { size = 150; yPos = 10; }
+          // Position clothing accurately over the body structure
+          if (layer === 'top') { size = 130; yPos = 55; }
+          if (layer === 'bottom') { size = 125; yPos = 115; }
+          if (layer === 'outerwear') { size = 145; yPos = 50; }
+          if (layer === 'shoes') { size = 90; yPos = 218; }
 
-          const xPos = (rect.width - size) / 2; // perfect center align
-
+          const xPos = (rect.width - size) / 2;
           ctx.drawImage(img, xPos, yPos, size, size);
           resolve();
         };
