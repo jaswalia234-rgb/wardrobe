@@ -727,21 +727,80 @@
       }
     }
 
-    function saveOutfit() {
-      const canvas = document.getElementById('outfit-canvas');
-      const imageDataUrl = canvas.toDataURL('image/png');
+    fasync function saveOutfit() {
+  const canvas = document.getElementById('outfit-canvas');
+  
+  // 1. Convert canvas to base64 Data URL (PNG)
+  const imageDataUrl = canvas.toDataURL('image/png');
 
-      const payload = {
-        image: imageDataUrl,
-        items: selectedOutfit,
-        bra: document.getElementById('bra-switch').checked,
-        tights: document.getElementById('tights-switch').checked
-      };
+  // 2. Build the payload
+  const payload = {
+    parent: { database_id: "YOUR_OUTFIT_LOG_DATABASE_ID" },
+    properties: {
+      "Name": {
+        title: [
+          { text: { content: `Outfit - ${new Date().toLocaleDateString('en-GB')}` } }
+        ]
+      },
+      "Push-up Bra": {
+        checkbox: document.getElementById('bra-switch').checked
+      },
+      "Tights": {
+        checkbox: document.getElementById('tights-switch').checked
+      },
+      "Selected Items": {
+        rich_text: [
+          {
+            text: {
+              content: Object.entries(selectedOutfit)
+                .filter(([_, item]) => item !== null)
+                .map(([cat, item]) => `${cat}: ${item.name}`)
+                .join(', ')
+            }
+          }
+        ]
+      }
+    },
+    // Add canvas image as an embedded Image Block inside the Notion page
+    children: [
+      {
+        object: 'block',
+        type: 'image',
+        image: {
+          type: 'external',
+          external: {
+            url: imageDataUrl // Note: Notion requires external URLs or direct base64 via Worker proxy
+          }
+        }
+      }
+    ]
+  };
 
-      console.log("Outfit payload ready for Notion:", payload);
-      alert("outfit saved with switches!");
+  // 3. Send payload through your Cloudflare Worker proxy
+  const notionEndpoint = "https://api.notion.com/v1/pages";
+  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
+
+  try {
+    const response = await fetch(proxiedUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${NOTION_TOKEN}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.ok) {
+      alert("outfit & canvas image successfully saved to notion!");
+    } else {
+      const errData = await response.json();
+      console.error("Notion API error:", errData);
     }
-
+  } catch (err) {
+    console.error("Error saving to Notion:", err);
+  }
+}
     fetchFromNotion();
   </script>
 </body>
