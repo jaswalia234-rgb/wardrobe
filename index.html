@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>wardrobe</title>
   <style>
     :root {
@@ -25,10 +25,16 @@
       text-transform: lowercase;
     }
 
-    body {
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden; /* prevents horizontal scrolling across all screens */
       background-color: var(--bg-color);
       color: var(--text-color);
-      padding: 24px 16px;
+    }
+
+    body {
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -37,10 +43,16 @@
 
     .container {
       width: 100%;
-      max-width: 950px;
+      max-width: 1000px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     h1 {
@@ -50,23 +62,39 @@
       letter-spacing: -0.5px;
     }
 
-    /* search and filters header */
+    .btn-clear-all {
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--text-color);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-clear-all:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    /* search and filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
-      padding: 16px;
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       box-shadow: 0 4px 15px rgba(244, 194, 194, 0.1);
     }
 
     .search-input {
       width: 100%;
-      padding: 10px 16px;
+      padding: 10px 14px;
       border: 1px solid rgba(244, 194, 194, 0.5);
       border-radius: var(--radius-md);
       font-size: 0.9rem;
@@ -84,11 +112,11 @@
     }
 
     .filter-chip {
-      padding: 6px 12px;
+      padding: 5px 12px;
       background: #ffffff;
       border: 1px solid rgba(244, 194, 194, 0.4);
       border-radius: 20px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--text-color);
       cursor: pointer;
       transition: all 0.2s ease;
@@ -100,16 +128,17 @@
       border-color: var(--accent);
     }
 
-    /* layout grid */
+    /* responsive grid layout */
     .dashboard-grid {
       display: grid;
       grid-template-columns: 1fr;
       gap: 20px;
+      width: 100%;
     }
 
     @media (min-width: 768px) {
       .dashboard-grid {
-        grid-template-columns: 320px 1fr;
+        grid-template-columns: 310px minmax(0, 1fr); /* minmax prevents flex/grid blowout on desktop */
       }
     }
 
@@ -120,20 +149,20 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
-      padding: 20px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       box-shadow: 0 10px 25px rgba(244, 194, 194, 0.15);
       position: sticky;
-      top: 20px;
+      top: 16px;
       height: fit-content;
     }
 
     .outfit-display-canvas {
       width: 100%;
-      height: 340px;
+      height: 330px;
       background: #ffffff;
       border-radius: var(--radius-md);
       display: flex;
@@ -148,14 +177,39 @@
       height: 100%;
     }
 
+    /* sliders / toggles */
+    .controls-panel {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(244, 194, 194, 0.3);
+    }
+
+    .control-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-color);
+    }
+
+    .control-item input[type="range"] {
+      width: 100px;
+      accent-color: var(--accent);
+    }
+
     .btn-sync {
       width: 100%;
-      padding: 12px 18px;
+      padding: 12px;
       background: var(--accent);
       color: #ffffff;
       border: none;
       border-radius: var(--radius-md);
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
       transition: background 0.2s ease;
@@ -167,7 +221,9 @@
     .carousel-section {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
+      width: 100%;
+      min-width: 0; /* prevents flex child overflow on web */
     }
 
     .category-group {
@@ -176,23 +232,45 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
-      padding: 16px;
+      padding: 14px;
+    }
+
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
     .category-title {
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 500;
       color: var(--subtext);
-      margin-bottom: 12px;
+    }
+
+    .btn-clear-cat {
+      background: none;
+      border: none;
+      color: var(--subtext);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .btn-clear-cat:hover {
+      background: rgba(244, 194, 194, 0.3);
+      color: var(--text-color);
     }
 
     .carousel {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
-      padding-bottom: 6px;
+      padding-bottom: 4px;
       -webkit-overflow-scrolling: touch;
+      width: 100%;
     }
 
     .carousel::-webkit-scrollbar { height: 4px; }
@@ -202,11 +280,11 @@
     }
 
     .item-card {
-      flex: 0 0 100px;
-      height: 110px;
+      flex: 0 0 95px;
+      height: 105px;
       background: #ffffff;
       border-radius: var(--radius-md);
-      padding: 8px;
+      padding: 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -223,15 +301,15 @@
     }
 
     .item-card img {
-      width: 65px;
-      height: 65px;
+      width: 60px;
+      height: 60px;
       object-fit: contain;
     }
 
     .item-card span {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-color);
-      margin-top: 6px;
+      margin-top: 4px;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
@@ -243,48 +321,85 @@
 <body>
 
   <div class="container">
-    <h1>wardrobe</h1>
+    
+    <div class="header-row">
+      <h1>wardrobe</h1>
+      <button class="btn-clear-all" onclick="clearAllOutfit()">clear outfit</button>
+    </div>
 
     <!-- search & filter bar -->
     <div class="filter-bar">
       <input type="text" class="search-input" id="search-box" placeholder="search items by name, color, tag..." oninput="applyFilters()" />
-      <div class="tag-filters" id="tag-chips">
-        <!-- filter chips render dynamically -->
-      </div>
+      <div class="tag-filters" id="tag-chips"></div>
     </div>
 
     <div class="dashboard-grid">
       
-      <!-- outfit canvas preview -->
+      <!-- preview canvas -->
       <div class="preview-card">
         <div class="category-title">tomorrow's outfit</div>
         <div class="outfit-display-canvas">
-          <canvas id="outfit-canvas" width="300" height="340"></canvas>
+          <canvas id="outfit-canvas" width="300" height="330"></canvas>
         </div>
+
+        <!-- sliders for bra and tights -->
+        <div class="controls-panel">
+          <div class="control-item">
+            <span>push-up bra</span>
+            <input type="range" id="bra-slider" min="0" max="1" step="0.1" value="0" oninput="drawOutfitCanvas()" />
+          </div>
+          <div class="control-item">
+            <span>tights opacity</span>
+            <input type="range" id="tights-slider" min="0" max="0.8" step="0.1" value="0" oninput="drawOutfitCanvas()" />
+          </div>
+        </div>
+
         <button class="btn-sync" onclick="saveOutfit()">save outfit to notion</button>
       </div>
 
       <!-- category carousels -->
       <div class="carousel-section">
+        
         <div class="category-group">
-          <div class="category-title">tops</div>
+          <div class="category-header">
+            <span class="category-title">tops</span>
+            <button class="btn-clear-cat" onclick="clearCategory('top')">clear</button>
+          </div>
           <div class="carousel" id="carousel-top"></div>
         </div>
 
         <div class="category-group">
-          <div class="category-title">bottoms</div>
+          <div class="category-header">
+            <span class="category-title">bottoms</span>
+            <button class="btn-clear-cat" onclick="clearCategory('bottom')">clear</button>
+          </div>
           <div class="carousel" id="carousel-bottom"></div>
         </div>
 
         <div class="category-group">
-          <div class="category-title">shoes</div>
+          <div class="category-header">
+            <span class="category-title">dresses</span>
+            <button class="btn-clear-cat" onclick="clearCategory('dresses')">clear</button>
+          </div>
+          <div class="carousel" id="carousel-dresses"></div>
+        </div>
+
+        <div class="category-group">
+          <div class="category-header">
+            <span class="category-title">shoes</span>
+            <button class="btn-clear-cat" onclick="clearCategory('shoes')">clear</button>
+          </div>
           <div class="carousel" id="carousel-shoes"></div>
         </div>
 
         <div class="category-group">
-          <div class="category-title">outerwear</div>
+          <div class="category-header">
+            <span class="category-title">outerwear</span>
+            <button class="btn-clear-cat" onclick="clearCategory('outerwear')">clear</button>
+          </div>
           <div class="carousel" id="carousel-outerwear"></div>
         </div>
+
       </div>
 
     </div>
@@ -295,12 +410,11 @@
     const NOTION_TOKEN = "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";
     const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
 
-    // LINK TO YOUR TRANSPARENT PERSON PNG ILLUSTRATION
-    const PERSON_IMAGE_URL = "images/person.png"; 
+    const PERSON_IMAGE_URL = "images/person.png";
 
     let wardrobeItems = [];
     let activeTags = new Set();
-    let selectedOutfit = { top: null, bottom: null, shoes: null, outerwear: null };
+    let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
 
     async function fetchFromNotion() {
       const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
@@ -325,20 +439,16 @@
         wardrobeItems = data.results.map(page => {
           const props = page.properties;
 
-          // Name
           const titleObj = props.name || props.Name || props.Title;
           const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
 
-          // Category
           let cat = props.category?.select?.name?.toLowerCase() || "top";
           if (cat === "bottoms") cat = "bottom";
+          if (cat === "dress") cat = "dresses";
 
-          // Colors & Tags
           const colors = props.color?.multi_select?.map(c => c.name.toLowerCase()) || [];
           const tags = props.tags?.multi_select?.map(t => t.name.toLowerCase()) || [];
-          if (props.color?.select?.name) colors.push(props.color.select.name.toLowerCase());
 
-          // Image URL
           let rawImgUrl = "";
           const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
           if (imgProp?.files?.[0]) {
@@ -410,7 +520,7 @@
     }
 
     function renderCarousels(items) {
-      const categories = ['top', 'bottom', 'shoes', 'outerwear'];
+      const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
 
       categories.forEach(cat => {
         const container = document.getElementById(`carousel-${cat}`);
@@ -419,7 +529,7 @@
         const catItems = items.filter(i => i.category === cat);
 
         if (catItems.length === 0) {
-          container.innerHTML = `<span style="font-size:0.8rem; color:var(--subtext); padding:8px;">no matching ${cat}s</span>`;
+          container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
           return;
         }
 
@@ -434,86 +544,135 @@
     }
 
     function selectItem(category, url, name, element) {
-      const parent = element.parentElement;
-      parent.querySelectorAll('.item-card').forEach(el => el.classList.remove('selected'));
-      element.classList.add('selected');
+      // DRESS vs TOP/BOTTOM LOGIC
+      if (category === 'dresses') {
+        selectedOutfit.top = null;
+        selectedOutfit.bottom = null;
+      } else if (category === 'top' || category === 'bottom') {
+        selectedOutfit.dresses = null;
+      }
 
       selectedOutfit[category] = { url, name };
+
+      // refresh carousel selection highlights
+      applyFilters();
       drawOutfitCanvas();
     }
 
-  async function drawOutfitCanvas() {
-  const canvas = document.getElementById('outfit-canvas');
-  const ctx = canvas.getContext('2d');
-  
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+    function clearCategory(category) {
+      selectedOutfit[category] = null;
+      applyFilters();
+      drawOutfitCanvas();
+    }
 
-  ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, rect.width, rect.height);
+    function clearAllOutfit() {
+      selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+      applyFilters();
+      drawOutfitCanvas();
+    }
 
-  // 1. DRAW CUTE PERSON PNG BASE
-  await new Promise((resolve) => {
-    const personImg = new Image();
-    personImg.src = PERSON_IMAGE_URL;
-    personImg.onload = () => {
-      const personHeight = 310;
-      const personWidth = 140;
-      const xPos = (rect.width - personWidth) / 2;
-      ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
-      resolve();
-    };
-    personImg.onerror = () => resolve();
-  });
+    async function drawOutfitCanvas() {
+      const canvas = document.getElementById('outfit-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
 
-  // 2. LAYER CLOTHING
-  const layers = ['bottom', 'top', 'shoes', 'outerwear'];
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, rect.width, rect.height);
 
-  for (const layer of layers) {
-    if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+      const centerX = rect.width / 2;
+
+      // 1. DRAW PERSON PNG BASE
       await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = selectedOutfit[layer].url;
-        img.onload = () => {
-          let size = 110;
-          let yPos = 45;
-          let xPos = (rect.width - size) / 2;
-
-          if (layer === 'top') { 
-            size = 110; // made tops slightly smaller
-            yPos = 45; 
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'bottom') { 
-            size = 145; // larger relative size for bottoms
-            yPos = 148; // pushed lower down
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'shoes') { 
-            size = 80; 
-            yPos = 245; 
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'outerwear') { 
-            size = 120; 
-            yPos = 55;
-            xPos = rect.width - size - 10; // right side
-          }
-
-          ctx.drawImage(img, xPos, yPos, size, size);
+        const personImg = new Image();
+        personImg.src = PERSON_IMAGE_URL;
+        personImg.onload = () => {
+          const personHeight = 310;
+          const personWidth = 140;
+          const xPos = (rect.width - personWidth) / 2;
+          ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
           resolve();
         };
-        img.onerror = () => resolve();
+        personImg.onerror = () => resolve();
       });
+
+      // 2. SLIDERS: PUSH-UP BRA & TIGHTS
+      const braVal = parseFloat(document.getElementById("bra-slider").value);
+      const tightsVal = parseFloat(document.getElementById("tights-slider").value);
+
+      // Tights layer (drawn over legs)
+      if (tightsVal > 0) {
+        ctx.save();
+        ctx.fillStyle = `rgba(30, 20, 25, ${tightsVal})`; // sheer black/brown tights tint
+        ctx.beginPath();
+        ctx.roundRect(centerX - 16, 140, 12, 105, 4); // left leg
+        ctx.roundRect(centerX + 4, 140, 12, 105, 4);  // right leg
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Push-up bra accent (subtle chest lift tint)
+      if (braVal > 0) {
+        ctx.save();
+        ctx.fillStyle = `rgba(244, 194, 194, ${braVal * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(centerX - 10, 68 - (braVal * 3), 10 + (braVal * 2), 0, Math.PI);
+        ctx.arc(centerX + 10, 68 - (braVal * 3), 10 + (braVal * 2), 0, Math.PI);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 3. LAYER CLOTHING
+      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
+
+      for (const layer of layers) {
+        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+          await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = selectedOutfit[layer].url;
+            img.onload = () => {
+              let size = 110;
+              let yPos = 45;
+              let xPos = (rect.width - size) / 2;
+
+              if (layer === 'dresses') {
+                size = 140;
+                yPos = 45;
+              }
+              if (layer === 'top') { 
+                size = 110; 
+                yPos = 45; 
+              }
+              if (layer === 'bottom') { 
+                size = 145; 
+                yPos = 148; 
+              }
+              if (layer === 'shoes') { 
+                size = 80; 
+                yPos = 245; 
+              }
+              if (layer === 'outerwear') { 
+                size = 120; 
+                yPos = 55;
+                xPos = rect.width - size - 10; // shifted to the right
+              }
+
+              ctx.drawImage(img, xPos, yPos, size, size);
+              resolve();
+            };
+            img.onerror = () => resolve();
+          });
+        }
+      }
     }
-  }
-}
+
     function saveOutfit() {
       const canvas = document.getElementById('outfit-canvas');
       const imageDataUrl = canvas.toDataURL('image/png');
