@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wardrobe & Outfit Picker</title>
+  <style>
+    :root {
+      --bg-color: #fbeef1;
+      --card-bg: rgba(255, 255, 255, 0.7);
+      --card-border: rgba(255, 255, 255, 0.9);
+      --text-color: #4a3e3d;
+      --accent-btn: #e8a5b8;
+      --accent-btn-hover: #d992a6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px 16px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 400;
+      font-size: 1.8rem;
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+    }
+
+    #loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 1rem;
+      opacity: 0.7;
+    }
+
+    .category-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 24px 0 12px 4px;
+      text-transform: capitalize;
+      letter-spacing: -0.3px;
+    }
+
+    .carousel {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .carousel::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .carousel::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    .card {
+      flex: 0 0 200px;
+      scroll-snap-align: start;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease;
+    }
+
+    .card:active {
+      transform: scale(0.98);
+    }
+
+    .card img {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 12px;
+      background-color: #ffffff;
+      margin-bottom: 10px;
+    }
+
+    .no-img {
+      width: 100%;
+      height: 170px;
+      border-radius: 12px;
+      background-color: rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      opacity: 0.5;
+      margin-bottom: 10px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .tag-fresh { background-color: #d4edda; color: #155724; }
+    .tag-warn  { background-color: #fff3cd; color: #856404; }
+    .tag-wash  { background-color: #f8d7da; color: #721c24; }
+
+    button {
+      width: 100%;
+      padding: 9px 0;
+      border: none;
+      border-radius: 12px;
+      background-color: var(--accent-btn);
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+
+    button:hover { background-color: var(--accent-btn-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <h1>Wardrobe Selector</h1>
+  <div id="loading">Loading your closet...</div>
+  <div id="app"></div>
+
+  <script>
+    // CONFIGURATION: Replace with your actual credentials
+    const NOTION_API_KEY = "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";
+    const DATABASE_ID = "40eaedaf73e8806dbddfdef92af3548e";
+    const CORS_PROXY = "https://corsproxy.io/?";
+
+    async function fetchWardrobe() {
+      const targetUrl = `https://api.notion.com/v1/databases/${DATABASE_ID}/query`; try { const response = await fetch(CORS_PROXY + encodeURIComponent(targetUrl), { method: "POST", headers: { "Authorization": `Bearer ${NOTION_API_KEY}`,
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error ${response.status}`); }  const data = await response.json(); document.getElementById("loading").style.display = "none"; renderWardrobe(data.results); } catch (err) { document.getElementById("loading").innerText = "Failed to load wardrobe data. Please check your credentials and database permissions."; console.error(err); } }  function calculateDays(lastWashedDate) { if (!lastWashedDate) return 999; const washed = new Date(lastWashedDate); const today = new Date(); const diffTime = Math.abs(today - washed); return Math.floor(diffTime / (1000 * 60 * 60 * 24)); }  async function markWoreToday(pageId, currentWears, btnElement) { btnElement.innerText = "Saving..."; btnElement.disabled = true;  const todayString = new Date().toISOString().split('T')[0]; const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
+
+      try {
+        await fetch(CORS_PROXY + encodeURIComponent(targetUrl), {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${NOTION_API_KEY}`, "Notion-Version": "2022-06-28", "Content-Type": "application/json" }, body: JSON.stringify({ properties: { "Wears Since Wash": { number: (currentWears \vert{}\vert{} 0) + 1 }, "Last Wore": { date: { start: todayString } } } }) }); await fetchWardrobe(); // Reload and re-render fresh counts } catch (err) { alert("Failed to update wear count."); btnElement.innerText = "Wore Today"; btnElement.disabled = false; } }  function renderWardrobe(items) { const app = document.getElementById("app"); app.innerHTML = "";  const categories = {};  items.forEach(item => { const cat = item.properties.Category?.select?.name \vert{}\vert{} "Uncategorized"; if (!categories[cat]) categories[cat] = []; categories[cat].push(item); });  for (const [category, clothes] of Object.entries(categories)) { const catHeader = document.createElement("div"); catHeader.className = "category-title"; catHeader.innerText = category; app.appendChild(catHeader);  const carousel = document.createElement("div"); carousel.className = "carousel";  clothes.forEach(clothing => { const name = clothing.properties.Name?.title[0]?.plain_text \vert{}\vert{} "Untitled Item";  // Extracts image from file upload or external URL const imgUrl = clothing.properties.Photo?.files[0]?.file?.url \vert{}\vert{} clothing.properties.Photo?.files[0]?.external?.url \vert{}\vert{} "";  const lastWashed = clothing.properties["Last Washed"]?.date?.start; const wears = clothing.properties["Wears Since Wash"]?.number \vert{}\vert{} 0; const days = calculateDays(lastWashed);  let tagClass = "tag-fresh"; let tagText = `${wears} wears · Washed ${days === 999 ? 'N/A' : days + 'd ago'}`;  if (wears >= 3 \vert{}\vert{} days > 7) { tagClass = "tag-warn"; } if (wears >= 5 \vert{}\vert{} days > 14) { tagClass = "tag-wash"; tagText = `${wears} wears · Wash Recommended!`; 
+          }
+
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            ${imgUrl ? `<img src="${imgUrl}" alt="${name}">` : `<div class="no-img">No Image</div>`}
+            <div class="card-title">${name}</div>
+            <div class="tag ${tagClass}">${tagText}</div>
+            <button onclick="markWoreToday('${clothing.id}',${wears}, this)">Wore Today</button>
+          `;
+          carousel.appendChild(card);
+        });
+
+        app.appendChild(carousel);
+      }
+    }
+
+    // Initialize on load
+    fetchWardrobe();
+  </script>
+</body>
+</html>
