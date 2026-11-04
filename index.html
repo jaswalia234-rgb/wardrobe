@@ -724,6 +724,9 @@
       }
     }
 async function saveOutfit() {
+  const canvas = document.getElementById('outfit-canvas');
+  
+  // 1. Get plain text summary of selected items
   const summaryText = Object.entries(selectedOutfit)
     .filter(([_, item]) => item !== null)
     .map(([cat, item]) => `${cat}: ${item.name}`)
@@ -732,35 +735,40 @@ async function saveOutfit() {
   const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
   const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
 
-  // Extract clean image links for selected items
-  const imageBlocks = Object.entries(selectedOutfit)
-    .filter(([_, item]) => item !== null && item.url)
-    .map(([cat, item]) => {
-      let rawUrl = item.url;
-      if (rawUrl.includes("url=")) {
-        rawUrl = decodeURIComponent(rawUrl.split("url=")[1]);
-      }
-      return {
-        object: "block",
-        type: "image",
-        image: {
-          type: "external",
-          external: { url: rawUrl }
-        }
-      };
-    });
+  // 2. Extract image URL from selected top or dress for the "outfit image" property
+  let mainItemUrl = "";
+  const mainItem = selectedOutfit.top || selectedOutfit.dresses || selectedOutfit.bottom;
+  if (mainItem && mainItem.url) {
+    mainItemUrl = mainItem.url.includes("url=") 
+      ? decodeURIComponent(mainItem.url.split("url=")[1]) 
+      : mainItem.url;
+  }
 
-  // Target database ID (uses OUTFIT_LOG_DB_ID or falls back to WARDROBE_DB_ID)
-  const targetDbId = typeof OUTFIT_LOG_DB_ID !== 'undefined' ? OUTFIT_LOG_DB_ID : WARDROBE_DB_ID;
+  // ISO date format (YYYY-MM-DD) for Notion date property
+  const todayISO = new Date().toISOString().split('T')[0];
 
   const payload = {
-    parent: { database_id: targetDbId },
+    parent: { database_id: OUTFIT_LOG_DB_ID },
     properties: {
-      "Name": {
+      "name": {
         title: [
           { text: { content: `outfit - ${new Date().toLocaleDateString('en-GB')}` } }
         ]
-      }
+      },
+      "date": {
+        date: { start: todayISO }
+      },
+      "outfit items": {
+        rich_text: [
+          { text: { content: summaryText } }
+        ]
+      },
+      // Populates the "outfit image" URL property directly
+      ...(mainItemUrl ? {
+        "outfit image": {
+          url: mainItemUrl
+        }
+      } : {})
     },
     children: [
       {
@@ -768,11 +776,10 @@ async function saveOutfit() {
         type: "paragraph",
         paragraph: {
           rich_text: [
-            { text: { content: `items: ${summaryText} | push-up bra: ${braState} | tights: ${tightsState}` } }
+            { text: { content: `push-up bra: ${braState} | tights: ${tightsState}` } }
           ]
         }
-      },
-      ...imageBlocks
+      }
     ]
   };
 
@@ -793,10 +800,10 @@ async function saveOutfit() {
     const resData = await response.json();
 
     if (response.ok) {
-      alert("outfit saved to notion!");
+      alert("outfit saved cleanly to notion!");
     } else {
-      console.error("Notion API Error Details:", resData);
-      alert(`failed to save to notion: ${resData.message || 'check console'}`);
+      console.error("notion error:", resData);
+      alert(`failed: ${resData.message || 'check console'}`);
     }
   } catch (err) {
     console.error("error saving to notion:", err);
