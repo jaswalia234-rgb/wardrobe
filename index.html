@@ -78,7 +78,6 @@
       color: #ffffff;
     }
 
-    /* search and filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -466,373 +465,323 @@
   </div>
 
   <script>
-   const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev";
-const NOTION_TOKEN = "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";
-const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
-const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
+    const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev";
+    const NOTION_TOKEN = "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";
+    const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
+    const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
 
-const PERSON_IMAGE_URL = "images/person.png";
+    // PASTE FREE IMGBB API KEY HERE FOR INSTANT CANVAS COVER UPLOADS
+    const IMGBB_API_KEY = "68fdfb239efee78e8b09fffe8e50bdf7"; 
 
-let wardrobeItems = [];
-let activeTags = new Set();
-let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+    const PERSON_IMAGE_URL = "images/person.png";
 
-// Convert raw Notion 32-char ID strings to standard UUID format (8-4-4-4-12)
-function formatUUID(id) {
-  if (!id) return "";
-  const clean = id.replace(/-/g, "");
-  if (clean.length !== 32) return id;
-  return `${clean.slice(0,8)}-${clean.slice(8,12)}-${clean.slice(12,16)}-${clean.slice(16,20)}-${clean.slice(20)}`;
-}
+    let wardrobeItems = [];
+    let activeTags = new Set();
+    let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
 
-async function fetchFromNotion() {
-  const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
-  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
-
-  try {
-    const response = await fetch(proxiedUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${NOTION_TOKEN}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        filter: { property: "status", select: { equals: "clean" } }
-      })
-    });
-
-    const data = await response.json();
-    if (!data.results) return;
-
-    wardrobeItems = data.results.map(page => {
-      const props = page.properties;
-
-      const titleObj = props.name || props.Name || props.Title;
-      const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
-
-      let cat = props.category?.select?.name?.toLowerCase() || "top";
-      if (cat === "bottoms") cat = "bottom";
-      if (cat === "dress") cat = "dresses";
-
-      const colourProp = props.colour || props.Colour || props.color || props.Color;
-      const colors = [];
-      if (colourProp?.multi_select) {
-        colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
-      } else if (colourProp?.select?.name) {
-        colors.push(colourProp.select.name.toLowerCase());
-      } else if (colourProp?.rich_text?.[0]?.plain_text) {
-        colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
-      }
-
-      const tagsProp = props.tags || props.Tags;
-      const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
-
-      let rawImgUrl = "";
-      const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
-      if (imgProp?.files?.[0]) {
-        rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
-      } else if (imgProp?.url) {
-        rawImgUrl = imgProp.url;
-      }
-
-      const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
-
-      return {
-        id: page.id, // Store Page ID for relation mapping
-        name: itemName,
-        category: cat,
-        colors: colors,
-        tags: tags,
-        url: proxiedImgUrl
-      };
-    });
-
-    populateColourDropdown();
-    buildTagChips();
-    renderCarousels(wardrobeItems);
-    drawOutfitCanvas();
-  } catch (err) {
-    console.error("error fetching notion wardrobe:", err);
-  }
-}
-
-function populateColourDropdown() {
-  const allColours = new Set();
-  wardrobeItems.forEach(item => {
-    item.colors.forEach(c => allColours.add(c));
-  });
-
-  const select = document.getElementById("colour-select");
-  select.innerHTML = '<option value="">all colours</option>' + 
-    Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
-}
-
-function buildTagChips() {
-  const allTags = new Set();
-  wardrobeItems.forEach(item => {
-    item.tags.forEach(t => allTags.add(t));
-  });
-
-  const container = document.getElementById("tag-chips");
-  container.innerHTML = Array.from(allTags).map(tag => `
-    <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
-  `).join('');
-}
-
-function toggleTagFilter(tag, element) {
-  if (activeTags.has(tag)) {
-    activeTags.delete(tag);
-    element.classList.remove("active");
-  } else {
-    activeTags.add(tag);
-    element.classList.add("active");
-  }
-  applyFilters();
-}
-
-function applyFilters() {
-  const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
-  const selectedColour = document.getElementById("colour-select").value.toLowerCase();
-
-  const filtered = wardrobeItems.filter(item => {
-    const matchesSearch = !searchQuery || item.name.includes(searchQuery);
-    const matchesColour = !selectedColour || item.colors.includes(selectedColour);
-    const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
-
-    return matchesSearch && matchesColour && matchesTags;
-  });
-
-  renderCarousels(filtered);
-}
-
-function renderCarousels(items) {
-  const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
-
-  categories.forEach(cat => {
-    const container = document.getElementById(`carousel-${cat}`);
-    if (!container) return;
-
-    const catItems = items.filter(i => i.category === cat);
-
-    if (catItems.length === 0) {
-      container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
-      return;
+    function formatUUID(id) {
+      if (!id) return "";
+      const clean = id.replace(/-/g, "");
+      if (clean.length !== 32) return id;
+      return `${clean.slice(0,8)}-${clean.slice(8,12)}-${clean.slice(12,16)}-${clean.slice(16,20)}-${clean.slice(20)}`;
     }
 
-    container.innerHTML = catItems.map(item => `
-      <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
-           onclick="selectItem('${cat}', '${item.id}', this)">
-        <img src="${item.url}" alt="${item.name}" crossorigin="anonymous" />
-        <span>${item.name}</span>
-      </div>
-    `).join('');
-  });
-}
+    async function fetchFromNotion() {
+      const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
+      const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
 
-function selectItem(category, itemId, element) {
-  const item = wardrobeItems.find(i => i.id === itemId);
-  if (!item) return;
-
-  if (category === 'dresses') {
-    selectedOutfit.top = null;
-    selectedOutfit.bottom = null;
-  } else if (category === 'top' || category === 'bottom') {
-    selectedOutfit.dresses = null;
-  }
-
-  selectedOutfit[category] = item;
-
-  applyFilters();
-  drawOutfitCanvas();
-}
-
-function clearCategory(category) {
-  selectedOutfit[category] = null;
-  applyFilters();
-  drawOutfitCanvas();
-}
-
-function clearAllOutfit() {
-  selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
-  applyFilters();
-  drawOutfitCanvas();
-}
-
-async function drawOutfitCanvas() {
-  const canvas = document.getElementById('outfit-canvas');
-  const ctx = canvas.getContext('2d');
-  
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
-
-  ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, rect.width, rect.height);
-
-  await new Promise((resolve) => {
-    const personImg = new Image();
-    personImg.src = PERSON_IMAGE_URL;
-    personImg.onload = () => {
-      const personHeight = 310;
-      const personWidth = 140;
-      const xPos = (rect.width - personWidth) / 2;
-      ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
-      resolve();
-    };
-    personImg.onerror = () => resolve();
-  });
-
-  const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
-
-  for (const layer of layers) {
-    if (selectedOutfit[layer] && selectedOutfit[layer].url) {
-      await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = selectedOutfit[layer].url;
-        img.onload = () => {
-          let size = 110;
-          let yPos = 45;
-          let xPos = (rect.width - size) / 2;
-
-          if (layer === 'dresses') {
-            size = 140;
-            yPos = 45;
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'top') { 
-            size = 110; 
-            yPos = 45; 
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'bottom') { 
-            size = 145; 
-            yPos = 148; 
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'shoes') { 
-            size = 80; 
-            yPos = 245; 
-            xPos = (rect.width - size) / 2;
-          }
-          if (layer === 'outerwear') { 
-            size = 120; 
-            yPos = 55;
-            xPos = rect.width - size - 10;
-          }
-
-          ctx.drawImage(img, xPos, yPos, size, size);
-          resolve();
-        };
-        img.onerror = () => resolve();
-      });
-    }
-  }
-}
-
-async function saveOutfit() {
-  const canvas = document.getElementById('outfit-canvas');
-  
-  // 1. Export the exact outfit canvas preview as PNG base64
-  const canvasDataBase64 = canvas.toDataURL('image/png');
-
-  const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
-  const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
-
-  // 2. Format Wardrobe Item Relations
-  const relationIds = Object.values(selectedOutfit)
-    .filter(item => item !== null && item.id)
-    .map(item => ({ id: formatUUID(item.id) }));
-
-  const todayISO = new Date().toISOString().split('T')[0];
-
-  // 3. Payload with canvas base64 image passed for cover creation
-  const payload = {
-    parentDatabaseId: formatUUID(OUTFIT_LOG_DB_ID),
-    title: `outfit - ${new Date().toLocaleDateString('en-GB')}`,
-    date: todayISO,
-    relations: relationIds,
-    bra: braState,
-    tights: tightsState,
-    imageBase64: canvasDataBase64
-  };
-
-  try {
-    const response = await fetch(`${WORKER_URL}?action=save-outfit-with-image`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const resData = await response.json();
-
-    if (response.ok) {
-      alert("outfit & canvas preview saved cleanly to notion!");
-    } else {
-      console.error("notion error details:", resData);
-      alert(`failed: ${resData.message || 'check console'}`);
-    }
-  } catch (err) {
-    console.error("error saving to notion:", err);
-    alert("network error saving to notion.");
-  }
-}
-
-  const notionEndpoint = "https://api.notion.com/v1/pages";
-  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
-
-  try {
-    const response = await fetch(proxiedUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${NOTION_TOKEN}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const resData = await response.json();
-
-    if (response.ok) {
-      alert("outfit saved cleanly to notion!");
-    } else {
-      console.error("notion error details:", resData);
-
-      // Retry with title property lowercase if Name title key fails
-      if (resData.message && resData.message.includes("Name is not a property")) {
-        payload.properties["title"] = payload.properties["Name"];
-        delete payload.properties["Name"];
-
-        const retryRes = await fetch(proxiedUrl, {
+      try {
+        const response = await fetch(proxiedUrl, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${NOTION_TOKEN}`,
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json"
           },
+          body: JSON.stringify({
+            filter: { property: "status", select: { equals: "clean" } }
+          })
+        });
+
+        const data = await response.json();
+        if (!data.results) return;
+
+        wardrobeItems = data.results.map(page => {
+          const props = page.properties;
+
+          const titleObj = props.name || props.Name || props.Title;
+          const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
+
+          let cat = props.category?.select?.name?.toLowerCase() || "top";
+          if (cat === "bottoms") cat = "bottom";
+          if (cat === "dress") cat = "dresses";
+
+          const colourProp = props.colour || props.Colour || props.color || props.Color;
+          const colors = [];
+          if (colourProp?.multi_select) {
+            colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
+          } else if (colourProp?.select?.name) {
+            colors.push(colourProp.select.name.toLowerCase());
+          } else if (colourProp?.rich_text?.[0]?.plain_text) {
+            colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
+          }
+
+          const tagsProp = props.tags || props.Tags;
+          const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
+
+          let rawImgUrl = "";
+          const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
+          if (imgProp?.files?.[0]) {
+            rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
+          } else if (imgProp?.url) {
+            rawImgUrl = imgProp.url;
+          }
+
+          const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
+
+          return {
+            id: page.id,
+            name: itemName,
+            category: cat,
+            colors: colors,
+            tags: tags,
+            url: proxiedImgUrl
+          };
+        });
+
+        populateColourDropdown();
+        buildTagChips();
+        renderCarousels(wardrobeItems);
+        drawOutfitCanvas();
+      } catch (err) {
+        console.error("error fetching notion wardrobe:", err);
+      }
+    }
+
+    function populateColourDropdown() {
+      const allColours = new Set();
+      wardrobeItems.forEach(item => {
+        item.colors.forEach(c => allColours.add(c));
+      });
+
+      const select = document.getElementById("colour-select");
+      select.innerHTML = '<option value="">all colours</option>' + 
+        Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    function buildTagChips() {
+      const allTags = new Set();
+      wardrobeItems.forEach(item => {
+        item.tags.forEach(t => allTags.add(t));
+      });
+
+      const container = document.getElementById("tag-chips");
+      container.innerHTML = Array.from(allTags).map(tag => `
+        <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
+      `).join('');
+    }
+
+    function toggleTagFilter(tag, element) {
+      if (activeTags.has(tag)) {
+        activeTags.delete(tag);
+        element.classList.remove("active");
+      } else {
+        activeTags.add(tag);
+        element.classList.add("active");
+      }
+      applyFilters();
+    }
+
+    function applyFilters() {
+      const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
+      const selectedColour = document.getElementById("colour-select").value.toLowerCase();
+
+      const filtered = wardrobeItems.filter(item => {
+        const matchesSearch = !searchQuery || item.name.includes(searchQuery);
+        const matchesColour = !selectedColour || item.colors.includes(selectedColour);
+        const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
+
+        return matchesSearch && matchesColour && matchesTags;
+      });
+
+      renderCarousels(filtered);
+    }
+
+    function renderCarousels(items) {
+      const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
+
+      categories.forEach(cat => {
+        const container = document.getElementById(`carousel-${cat}`);
+        if (!container) return;
+
+        const catItems = items.filter(i => i.category === cat);
+
+        if (catItems.length === 0) {
+          container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
+          return;
+        }
+
+        container.innerHTML = catItems.map(item => `
+          <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
+               onclick="selectItem('${cat}', '${item.id}', this)">
+            <img src="${item.url}" alt="${item.name}" crossorigin="anonymous" />
+            <span>${item.name}</span>
+          </div>
+        `).join('');
+      });
+    }
+
+    function selectItem(category, itemId, element) {
+      const item = wardrobeItems.find(i => i.id === itemId);
+      if (!item) return;
+
+      if (category === 'dresses') {
+        selectedOutfit.top = null;
+        selectedOutfit.bottom = null;
+      } else if (category === 'top' || category === 'bottom') {
+        selectedOutfit.dresses = null;
+      }
+
+      selectedOutfit[category] = item;
+
+      applyFilters();
+      drawOutfitCanvas();
+    }
+
+    function clearCategory(category) {
+      selectedOutfit[category] = null;
+      applyFilters();
+      drawOutfitCanvas();
+    }
+
+    function clearAllOutfit() {
+      selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+      applyFilters();
+      drawOutfitCanvas();
+    }
+
+    async function drawOutfitCanvas() {
+      const canvas = document.getElementById('outfit-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      await new Promise((resolve) => {
+        const personImg = new Image();
+        personImg.src = PERSON_IMAGE_URL;
+        personImg.onload = () => {
+          const personHeight = 310;
+          const personWidth = 140;
+          const xPos = (rect.width - personWidth) / 2;
+          ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
+          resolve();
+        };
+        personImg.onerror = () => resolve();
+      });
+
+      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
+
+      for (const layer of layers) {
+        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+          await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = selectedOutfit[layer].url;
+            img.onload = () => {
+              let size = 110;
+              let yPos = 45;
+              let xPos = (rect.width - size) / 2;
+
+              if (layer === 'dresses') {
+                size = 140;
+                yPos = 45;
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'top') { 
+                size = 110; 
+                yPos = 45; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'bottom') { 
+                size = 145; 
+                yPos = 148; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'shoes') { 
+                size = 80; 
+                yPos = 245; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'outerwear') { 
+                size = 120; 
+                yPos = 55;
+                xPos = rect.width - size - 10;
+              }
+
+              ctx.drawImage(img, xPos, yPos, size, size);
+              resolve();
+            };
+            img.onerror = () => resolve();
+          });
+        }
+      }
+    }
+
+    async function saveOutfit() {
+      const canvas = document.getElementById('outfit-canvas');
+      const canvasDataBase64 = canvas.toDataURL('image/png');
+
+      const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
+      const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
+
+      const relationIds = Object.values(selectedOutfit)
+        .filter(item => item !== null && item.id)
+        .map(item => ({ id: formatUUID(item.id) }));
+
+      const todayISO = new Date().toISOString().split('T')[0];
+
+      const payload = {
+        parentDatabaseId: formatUUID(OUTFIT_LOG_DB_ID),
+        title: `outfit - ${new Date().toLocaleDateString('en-GB')}`,
+        date: todayISO,
+        relations: relationIds,
+        bra: braState,
+        tights: tightsState,
+        imageBase64: canvasDataBase64,
+        imgbbKey: IMGBB_API_KEY
+      };
+
+      try {
+        const response = await fetch(`${WORKER_URL}?action=save-outfit-with-image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
 
-        if (retryRes.ok) {
-          alert("outfit saved cleanly to notion!");
-          return;
-        }
-      }
-      alert(`failed: ${resData.message || 'check console'}`);
-    }
-  } catch (err) {
-    console.error("error saving to notion:", err);
-    alert("network error saving to notion.");
-  }
-}
+        const resData = await response.json();
 
-fetchFromNotion();
+        if (response.ok) {
+          alert("outfit saved cleanly with full canvas preview cover!");
+        } else {
+          console.error("notion error details:", resData);
+          alert(`failed: ${resData.message || 'check console'}`);
+        }
+      } catch (err) {
+        console.error("error saving to notion:", err);
+        alert("network error saving to notion.");
+      }
+    }
+
+    fetchFromNotion();
   </script>
 </body>
 </html>
