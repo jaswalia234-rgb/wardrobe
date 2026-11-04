@@ -7,7 +7,7 @@
   <style>
     :root {
       --bg-color: #fcf6f8;
-      --card-bg: rgba(255, 255, 255, 0.7);
+      --card-bg: rgba(255, 255, 255, 0.75);
       --accent: #f4c2c2;
       --accent-hover: #eaa8a8;
       --text-color: #4a3e3e;
@@ -37,10 +37,10 @@
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 950px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
     h1 {
@@ -50,6 +50,57 @@
       letter-spacing: -0.5px;
     }
 
+    /* search and filters header */
+    .filter-bar {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 15px rgba(244, 194, 194, 0.1);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 16px;
+      border: 1px solid rgba(244, 194, 194, 0.5);
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-color);
+      outline: none;
+    }
+
+    .search-input::placeholder { color: var(--subtext); }
+
+    .tag-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 6px 12px;
+      background: #ffffff;
+      border: 1px solid rgba(244, 194, 194, 0.4);
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-chip.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    /* layout grid */
     .dashboard-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -62,6 +113,7 @@
       }
     }
 
+    /* preview card */
     .preview-card {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -81,7 +133,7 @@
 
     .outfit-display-canvas {
       width: 100%;
-      height: 320px;
+      height: 340px;
       background: #ffffff;
       border-radius: var(--radius-md);
       display: flex;
@@ -106,12 +158,12 @@
       font-size: 0.95rem;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.2s ease, transform 0.1s ease;
+      transition: background 0.2s ease;
     }
 
     .btn-sync:hover { background: var(--accent-hover); }
-    .btn-sync:active { transform: scale(0.98); }
 
+    /* category carousels */
     .carousel-section {
       display: flex;
       flex-direction: column;
@@ -125,7 +177,6 @@
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
       padding: 16px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
     }
 
     .category-title {
@@ -172,10 +223,10 @@
     }
 
     .item-card img {
-  width: 70px;
-  height: 70px;
-  object-fit: contain; /* prevents distortion on carousel thumbnails */
-}
+      width: 65px;
+      height: 65px;
+      object-fit: contain;
+    }
 
     .item-card span {
       font-size: 0.75rem;
@@ -194,16 +245,26 @@
   <div class="container">
     <h1>wardrobe</h1>
 
+    <!-- search & filter bar -->
+    <div class="filter-bar">
+      <input type="text" class="search-input" id="search-box" placeholder="search items by name, color, tag..." oninput="applyFilters()" />
+      <div class="tag-filters" id="tag-chips">
+        <!-- filter chips render dynamically -->
+      </div>
+    </div>
+
     <div class="dashboard-grid">
       
+      <!-- outfit canvas preview -->
       <div class="preview-card">
         <div class="category-title">tomorrow's outfit</div>
         <div class="outfit-display-canvas">
-          <canvas id="outfit-canvas" width="300" height="320"></canvas>
+          <canvas id="outfit-canvas" width="300" height="340"></canvas>
         </div>
         <button class="btn-sync" onclick="saveOutfit()">save outfit to notion</button>
       </div>
 
+      <!-- category carousels -->
       <div class="carousel-section">
         <div class="category-group">
           <div class="category-title">tops</div>
@@ -230,93 +291,141 @@
   </div>
 
   <script>
-    const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev/"; // e.g. https://wardrobe-proxy.username.workers.dev
+    const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev";
     const NOTION_TOKEN = "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";
     const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
 
+    // LINK TO YOUR TRANSPARENT PERSON PNG ILLUSTRATION
+    const PERSON_IMAGE_URL = "images/person.png"; 
+
     let wardrobeItems = [];
+    let activeTags = new Set();
     let selectedOutfit = { top: null, bottom: null, shoes: null, outerwear: null };
 
     async function fetchFromNotion() {
-  const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
-  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
+      const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
+      const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
 
-  try {
-    const response = await fetch(proxiedUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${NOTION_TOKEN}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        filter: {
-          property: "status",
-          select: { equals: "clean" } // strictly fetch clean items
-        }
-      })
-    });
+      try {
+        const response = await fetch(proxiedUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${NOTION_TOKEN}`,
+            "Notion-Version": "2022-06-28",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            filter: { property: "status", select: { equals: "clean" } }
+          })
+        });
 
-    const data = await response.json();
-    if (!data.results) return;
+        const data = await response.json();
+        if (!data.results) return;
 
-    wardrobeItems = data.results.map(page => {
-      const props = page.properties;
-      
-      // 1. Get exact item title from "name" property
-      const titleObj = props.name || props.Name || props.Title;
-      const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
+        wardrobeItems = data.results.map(page => {
+          const props = page.properties;
 
-      // 2. Normalize plural category names (e.g. "bottoms" -> "bottom")
-      let cat = props.category?.select?.name?.toLowerCase() || "top";
-      if (cat === "bottoms") cat = "bottom";
-      if (cat === "shoes" || cat === "shoe") cat = "shoes";
+          // Name
+          const titleObj = props.name || props.Name || props.Title;
+          const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
 
-      // 3. Extract file URL from "image url" property
-      let rawImgUrl = "";
-      const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
-      
-      if (imgProp?.files?.[0]) {
-        rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
-      } else if (imgProp?.url) {
-        rawImgUrl = imgProp.url;
-      } else if (imgProp?.rich_text?.[0]?.plain_text) {
-        rawImgUrl = imgProp.rich_text[0].plain_text;
+          // Category
+          let cat = props.category?.select?.name?.toLowerCase() || "top";
+          if (cat === "bottoms") cat = "bottom";
+
+          // Colors & Tags
+          const colors = props.color?.multi_select?.map(c => c.name.toLowerCase()) || [];
+          const tags = props.tags?.multi_select?.map(t => t.name.toLowerCase()) || [];
+          if (props.color?.select?.name) colors.push(props.color.select.name.toLowerCase());
+
+          // Image URL
+          let rawImgUrl = "";
+          const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
+          if (imgProp?.files?.[0]) {
+            rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
+          } else if (imgProp?.url) {
+            rawImgUrl = imgProp.url;
+          }
+
+          const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
+
+          return {
+            id: page.id,
+            name: itemName,
+            category: cat,
+            colors: colors,
+            tags: tags,
+            url: proxiedImgUrl
+          };
+        });
+
+        buildTagChips();
+        renderCarousels(wardrobeItems);
+        drawOutfitCanvas();
+      } catch (err) {
+        console.error("error fetching notion wardrobe:", err);
       }
+    }
 
-      // Proxy image through Cloudflare Worker
-      const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
+    function buildTagChips() {
+      const allTags = new Set();
+      wardrobeItems.forEach(item => {
+        item.colors.forEach(c => allTags.add(c));
+        item.tags.forEach(t => allTags.add(t));
+      });
 
-      return {
-        id: page.id,
-        name: itemName,
-        category: cat,
-        url: proxiedImgUrl
-      };
-    });
+      const container = document.getElementById("tag-chips");
+      container.innerHTML = Array.from(allTags).map(tag => `
+        <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
+      `).join('');
+    }
 
-    renderCarousels();
-  } catch (err) {
-    console.error("error fetching notion wardrobe:", err);
-  }
-}
+    function toggleTagFilter(tag, element) {
+      if (activeTags.has(tag)) {
+        activeTags.delete(tag);
+        element.classList.remove("active");
+      } else {
+        activeTags.add(tag);
+        element.classList.add("active");
+      }
+      applyFilters();
+    }
 
-    function renderCarousels() {
+    function applyFilters() {
+      const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
+
+      const filtered = wardrobeItems.filter(item => {
+        const matchesSearch = !searchQuery || 
+          item.name.includes(searchQuery) ||
+          item.colors.some(c => c.includes(searchQuery)) ||
+          item.tags.some(t => t.includes(searchQuery));
+
+        const matchesTags = activeTags.size === 0 || 
+          Array.from(activeTags).every(t => item.colors.includes(t) || item.tags.includes(t));
+
+        return matchesSearch && matchesTags;
+      });
+
+      renderCarousels(filtered);
+    }
+
+    function renderCarousels(items) {
       const categories = ['top', 'bottom', 'shoes', 'outerwear'];
 
       categories.forEach(cat => {
         const container = document.getElementById(`carousel-${cat}`);
         if (!container) return;
 
-        const catItems = wardrobeItems.filter(i => i.category === cat);
+        const catItems = items.filter(i => i.category === cat);
 
         if (catItems.length === 0) {
-          container.innerHTML = `<span style="font-size:0.8rem; color:var(--subtext); padding:8px;">no clean ${cat}s found</span>`;
+          container.innerHTML = `<span style="font-size:0.8rem; color:var(--subtext); padding:8px;">no matching ${cat}s</span>`;
           return;
         }
 
         container.innerHTML = catItems.map(item => `
-          <div class="item-card" onclick="selectItem('${cat}', '${item.url}', '${item.name}', this)">
+          <div class="item-card ${selectedOutfit[cat]?.name === item.name ? 'selected' : ''}" 
+               onclick="selectItem('${cat}', '${item.url}', '${item.name}', this)">
             <img src="${item.url}" alt="${item.name}" crossorigin="anonymous" />
             <span>${item.name}</span>
           </div>
@@ -333,98 +442,66 @@
       drawOutfitCanvas();
     }
 
-async function drawOutfitCanvas() {
-  const canvas = document.getElementById('outfit-canvas');
-  const ctx = canvas.getContext('2d');
-  
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+    async function drawOutfitCanvas() {
+      const canvas = document.getElementById('outfit-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
 
-  ctx.clearRect(0, 0, rect.width, rect.height);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, rect.width, rect.height);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, rect.width, rect.height);
 
-  const centerX = rect.width / 2;
-
-  // cute minimalistic character silhouette
-  ctx.save();
-  ctx.fillStyle = "#f8e2e5";
-  ctx.strokeStyle = "#e8b4b8";
-  ctx.lineWidth = 1.2;
-
-  // hair / top knot
-  ctx.beginPath();
-  ctx.arc(centerX, 28, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // head
-  ctx.beginPath();
-  ctx.arc(centerX, 42, 13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // neck & collar
-  ctx.fillRect(centerX - 2, 54, 4, 8);
-
-  // torso (slender, soft line)
-  ctx.beginPath();
-  ctx.moveTo(centerX - 15, 62);
-  ctx.quadraticCurveTo(centerX - 10, 100, centerX - 11, 140);
-  ctx.lineTo(centerX + 11, 140);
-  ctx.quadraticCurveTo(centerX + 10, 100, centerX + 15, 62);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  // cute stance legs
-  ctx.beginPath();
-  ctx.roundRect(centerX - 9, 140, 6, 95, 3);
-  ctx.roundRect(centerX + 3, 140, 6, 95, 3);
-  ctx.fill();
-
-  // arms
-  ctx.beginPath();
-  ctx.roundRect(centerX - 21, 64, 5, 75, 2.5);
-  ctx.roundRect(centerX + 16, 64, 5, 75, 2.5);
-  ctx.fill();
-
-  ctx.restore();
-
-  // layer clothing items over character
-  const layers = ['bottom', 'top', 'outerwear', 'shoes'];
-
-  for (const layer of layers) {
-    if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+      // 1. DRAW CUTE PERSON PNG BASE
       await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = selectedOutfit[layer].url;
-        img.onload = () => {
-          let size = 120;
-          let yPos = 55;
-
-          if (layer === 'top') { size = 130; yPos = 52; }
-          if (layer === 'bottom') { size = 125; yPos = 110; }
-          if (layer === 'outerwear') { size = 145; yPos = 48; }
-          if (layer === 'shoes') { size = 85; yPos = 215; }
-
-          const xPos = (rect.width - size) / 2;
-          ctx.drawImage(img, xPos, yPos, size, size);
+        const personImg = new Image();
+        personImg.src = PERSON_IMAGE_URL;
+        personImg.onload = () => {
+          const personHeight = 310;
+          const personWidth = 140;
+          const xPos = (rect.width - personWidth) / 2;
+          ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
           resolve();
         };
-        img.onerror = () => resolve();
+        personImg.onerror = () => resolve(); // skip gracefully if person.png isn't added yet
       });
+
+      // 2. LAYER CLOTHING ON TOP OF PERSON
+      const layers = ['bottom', 'top', 'outerwear', 'shoes'];
+
+      for (const layer of layers) {
+        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+          await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = selectedOutfit[layer].url;
+            img.onload = () => {
+              let size = 130;
+              let yPos = 50;
+
+              if (layer === 'top') { size = 135; yPos = 48; }
+              if (layer === 'bottom') { size = 130; yPos = 110; }
+              if (layer === 'outerwear') { size = 150; yPos = 40; }
+              if (layer === 'shoes') { size = 90; yPos = 225; }
+
+              const xPos = (rect.width - size) / 2;
+              ctx.drawImage(img, xPos, yPos, size, size);
+              resolve();
+            };
+            img.onerror = () => resolve();
+          });
+        }
+      }
     }
-  }
-}
+
     function saveOutfit() {
       const canvas = document.getElementById('outfit-canvas');
       const imageDataUrl = canvas.toDataURL('image/png');
-      console.log("compiled outfit image ready:", imageDataUrl);
       alert("outfit compiled!");
     }
 
