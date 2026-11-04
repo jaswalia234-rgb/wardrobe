@@ -727,31 +727,13 @@ async function saveOutfit() {
   const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
   const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
 
-  // 1. Get linked Wardrobe Page IDs
+  // Map selected items to Notion Relation page IDs
   const relationIds = Object.values(selectedOutfit)
     .filter(item => item !== null && item.id)
     .map(item => ({ id: item.id }));
 
-  // 2. Filter ONLY valid external images (non-Notion / non-S3) for "outfit image"
-  const validExternalFiles = Object.values(selectedOutfit)
-    .filter(item => item !== null && item.url)
-    .map(item => {
-      let rawUrl = item.url;
-      if (rawUrl.includes("url=")) {
-        rawUrl = decodeURIComponent(rawUrl.split("url=")[1]);
-      }
-      return { rawUrl, name: item.name };
-    })
-    .filter(f => !f.rawUrl.includes("notion.so") && !f.rawUrl.includes("amazonaws.com") && !f.rawUrl.includes("prod-files-secure"))
-    .map(f => ({
-      name: f.name,
-      type: "external",
-      external: { url: f.rawUrl }
-    }));
-
   const todayISO = new Date().toISOString().split('T')[0];
 
-  // Build Notion Payload
   const payload = {
     parent: { database_id: OUTFIT_LOG_DB_ID },
     properties: {
@@ -765,10 +747,7 @@ async function saveOutfit() {
       },
       "outfit items": {
         relation: relationIds
-      },
-      ...(validExternalFiles.length > 0 ? {
-        "outfit image": { files: validExternalFiles }
-      } : {})
+      }
     },
     children: [
       {
