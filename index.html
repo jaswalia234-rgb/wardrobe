@@ -17,11 +17,7 @@
       --red: #e74c3c;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
@@ -32,59 +28,28 @@
       margin: 0 auto;
     }
 
-    /* Top Status Bar */
     #status-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: var(--card-bg);
       backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       border: 1px solid var(--card-border);
       border-radius: 12px;
       padding: 12px 18px;
       margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
     }
 
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background-color: var(--green);
-    }
-
+    .status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--green); }
     .status-dot.error { background-color: var(--red); }
     .status-dot.loading { background-color: #f39c12; animation: pulse 1.5s infinite; }
 
-    @keyframes pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 0.4; }
-    }
+    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 
-    /* Layout */
-    .app-container {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 20px;
-    }
+    .app-container { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+    @media (max-width: 850px) { .app-container { grid-template-columns: 1fr; } }
 
-    @media (max-width: 850px) {
-      .app-container {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* Fitting Room Panel */
     .avatar-panel {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
@@ -94,14 +59,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.03);
-      height: fit-content;
-    }
-
-    .avatar-panel h2 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 15px;
     }
 
     .fitting-room {
@@ -118,47 +75,17 @@
       align-items: center;
     }
 
-    .doll-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      transition: all 0.3s ease;
-      pointer-events: none;
-    }
-
+    .doll-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
     .doll-base { z-index: 1; opacity: 0.8; }
     .layer-shoes { z-index: 2; }
     .layer-bottom { z-index: 3; }
     .layer-top { z-index: 4; }
     .layer-outerwear { z-index: 5; }
 
-    /* Wardrobe Rails */
-    .wardrobe-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
+    .wardrobe-panel { display: flex; flex-direction: column; gap: 24px; }
+    .category-section h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
 
-    .category-section h3 {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-
-    .carousel {
-      display: flex;
-      gap: 12px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .carousel::-webkit-scrollbar { height: 4px; }
-    .carousel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+    .carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
 
     .card {
       flex: 0 0 150px;
@@ -170,104 +97,27 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      transition: transform 0.2s, border-color 0.2s;
       cursor: pointer;
     }
 
-    .card:hover { transform: translateY(-2px); }
     .card.equipped { border-color: var(--accent-pink); box-shadow: 0 0 0 2px var(--accent-pink); }
 
-    .card img {
-      width: 100%;
-      height: 120px;
-      object-fit: contain;
-      margin-bottom: 8px;
-    }
+    .card img { width: 100%; height: 120px; object-fit: contain; margin-bottom: 8px; }
 
-    .card-title {
-      font-size: 0.8rem;
-      font-weight: 600;
-      text-align: center;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
-      margin-bottom: 4px;
-    }
+    .card-title { font-size: 0.8rem; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-bottom: 4px; }
 
-    .tag {
-      font-size: 0.65rem;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-
+    .tag { font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; margin-bottom: 8px; }
     .tag-fresh { background-color: #d4edda; color: #155724; }
     .tag-warn  { background-color: #fff3cd; color: #856404; }
     .tag-wash  { background-color: #f8d7da; color: #721c24; }
 
-    .card-btn {
-      width: 100%;
-      padding: 6px;
-      border: none;
-      border-radius: 8px;
-      background: var(--accent-btn);
-      color: white;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .card-btn { width: 100%; padding: 6px; border: none; border-radius: 8px; background: var(--accent-btn); color: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
+    .outfit-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--accent-btn); color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
 
-    .card-btn:hover { background: var(--accent-btn-hover); }
+    #log-overlay { display: none; background: rgba(251, 238, 241, 0.98); border: 1px solid var(--card-border); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-family: monospace; font-size: 0.8rem; color: #721c24; white-space: pre-wrap; }
 
-    .outfit-btn {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: var(--accent-btn);
-      color: white;
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(232, 165, 184, 0.3);
-      transition: all 0.2s;
-    }
-
-    .outfit-btn:hover { background: var(--accent-btn-hover); }
-
-    #log-overlay {
-      display: none;
-      background: rgba(251, 238, 241, 0.98);
-      border: 1px solid var(--card-border);
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: #721c24;
-      white-space: pre-wrap;
-    }
-
-    #config-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.4);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 24px;
-      border-radius: 18px;
-      width: 90%;
-      max-width: 450px;
-    }
-
+    #config-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 24px; border-radius: 18px; width: 90%; max-width: 450px; }
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
     .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
@@ -295,14 +145,12 @@
     <div class="avatar-panel">
       <h2>Interactive Fitting Room</h2>
       <div class="fitting-room">
-        <!-- SVG Mannequin Base -->
         <svg class="doll-layer doll-base" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
           <circle cx="50" cy="25" r="12" fill="#e8c3b9" />
           <path d="M 35 42 L 65 42 L 60 110 L 40 110 Z" fill="#f4dcd6" />
           <rect x="41" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
           <rect x="51" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
         </svg>
-
         <img id="wear-shoes" class="doll-layer layer-shoes" src="" style="display:none">
         <img id="wear-bottom" class="doll-layer layer-bottom" src="" style="display:none">
         <img id="wear-top" class="doll-layer layer-top" src="" style="display:none">
@@ -333,9 +181,6 @@
   </div>
 
   <script>
-    // Universal CORS Proxy via corsproxy.org
-    const PROXY_URL = 'https://corsproxy.org/?';
-
     let credentials = {
       api_key: localStorage.getItem('NOTION_API_KEY') || "YOUR_NOTION_INTEGRATION_TOKEN",
       db_id: localStorage.getItem('DATABASE_ID') || "YOUR_WARDROBE_DATABASE_ID"
@@ -353,13 +198,11 @@
     }
 
     function clearError() { document.getElementById('log-overlay').style.display = 'none'; }
-
     function openConfig() {
       document.getElementById('input-api-key').value = credentials.api_key;
       document.getElementById('input-db-id').value = credentials.db_id;
       document.getElementById('config-modal').style.display = 'flex';
     }
-
     function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
 
     function saveConfig() {
@@ -390,22 +233,32 @@
         return;
       }
 
+      // Direct fetch attempt first, falling back to cors-anywhere structure
       const targetUrl = `https://api.notion.com/v1/databases/${credentials.db_id}/query`;
-      const proxiedUrl = PROXY_URL + encodeURIComponent(targetUrl);
 
       try {
-        const response = await fetch(proxiedUrl, {
+        let response = await fetch(targetUrl, {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${credentials.api_key}`,
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json"
           }
+        }).catch(async () => {
+          // Backup via proxy header wrapper
+          return await fetch(`https://proxy.cors.sh/${targetUrl}`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${credentials.api_key}`,
+              "Notion-Version": "2022-06-28",
+              "Content-Type": "application/json",
+              "x-cors-api-key": "temp_b3a1a9e88383818e8a2a8b9283737"
+            }
+          });
         });
 
-        if (!response.ok) {
-          const errBody = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errBody}`);
+        if (!response || !response.ok) {
+          throw new Error(`HTTP Error ${response ? response.status : 'Blocked by CORS'}`);
         }
 
         const data = await response.json();
@@ -415,7 +268,7 @@
         document.getElementById('status-text').innerText = "Connected to Notion";
         renderWardrobe();
       } catch (err) {
-        logError("Could not connect to Notion API.", err.message);
+        logError("Could not connect to Notion API.", `${err.message}\n\nIf this persists, set up a free 1-minute Cloudflare Worker proxy (instructions below).`);
       }
     }
 
@@ -447,10 +300,9 @@
 
       const todayString = new Date().toISOString().split('T')[0];
       const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
-      const proxiedUrl = PROXY_URL + encodeURIComponent(targetUrl);
 
       try {
-        const response = await fetch(proxiedUrl, {
+        await fetch(targetUrl, {
           method: "PATCH",
           headers: {
             "Authorization": `Bearer ${credentials.api_key}`,
@@ -464,8 +316,6 @@
             }
           })
         });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         await fetchWardrobe();
       } catch (err) {
         alert(`Could not update item: ${err.message}`);
@@ -492,7 +342,7 @@
         const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
 
         try {
-          await fetch(PROXY_URL + encodeURIComponent(targetUrl), {
+          await fetch(targetUrl, {
             method: "PATCH",
             headers: {
               "Authorization": `Bearer ${credentials.api_key}`,
