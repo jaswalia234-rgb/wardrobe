@@ -1,385 +1,28 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wardrobe & Outfit Picker</title>
-  <style>
-    :root {
-      --bg-color: #fbeef1;
-      --card-bg: rgba(255, 255, 255, 0.65);
-      --card-border: rgba(255, 255, 255, 0.8);
-      --text-color: #4a3e3d;
-      --accent-pink: #f4b6c2;
-      --accent-btn: #e8a5b8;
-      --accent-btn-hover: #d992a6;
-      --green: #27ae60;
-      --red: #e74c3c;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      padding: 16px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    #status-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 12px 18px;
-      margin-bottom: 20px;
-    }
-
-    .status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; }
-    .status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--green); }
-    .status-dot.error { background-color: var(--red); }
-    .status-dot.loading { background-color: #f39c12; animation: pulse 1.5s infinite; }
-
-    @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-
-    .app-container { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-    @media (max-width: 850px) { .app-container { grid-template-columns: 1fr; } }
-
-    .avatar-panel {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .fitting-room {
-      position: relative;
-      width: 200px;
-      height: 380px;
-      background: rgba(255,255,255,0.5);
-      border-radius: 16px;
-      overflow: hidden;
-      margin-bottom: 20px;
-      border: 1px dashed rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .doll-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-    .doll-base { z-index: 1; opacity: 0.8; }
-    .layer-shoes { z-index: 2; }
-    .layer-bottom { z-index: 3; }
-    .layer-top { z-index: 4; }
-    .layer-outerwear { z-index: 5; }
-
-    .wardrobe-panel { display: flex; flex-direction: column; gap: 24px; }
-    .category-section h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; }
-
-    .carousel { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
-
-    .card {
-      flex: 0 0 150px;
-      scroll-snap-align: start;
-      background: #ffffff;
-      border: 1px solid rgba(0,0,0,0.05);
-      border-radius: 14px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-    }
-
-    .card.equipped { border-color: var(--accent-pink); box-shadow: 0 0 0 2px var(--accent-pink); }
-
-    .card img { width: 100%; height: 120px; object-fit: contain; margin-bottom: 8px; }
-
-    .card-title { font-size: 0.8rem; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-bottom: 4px; }
-
-    .tag { font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: 500; margin-bottom: 8px; }
-    .tag-fresh { background-color: #d4edda; color: #155724; }
-    .tag-warn  { background-color: #fff3cd; color: #856404; }
-    .tag-wash  { background-color: #f8d7da; color: #721c24; }
-
-    .card-btn { width: 100%; padding: 6px; border: none; border-radius: 8px; background: var(--accent-btn); color: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
-    .outfit-btn { width: 100%; padding: 14px; border: none; border-radius: 12px; background: var(--accent-btn); color: white; font-weight: 700; font-size: 0.95rem; cursor: pointer; }
-
-    #log-overlay { display: none; background: rgba(251, 238, 241, 0.98); border: 1px solid var(--card-border); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-family: monospace; font-size: 0.8rem; color: #721c24; white-space: pre-wrap; }
-
-    #config-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
-    .modal-content { background: white; padding: 24px; border-radius: 18px; width: 90%; max-width: 450px; }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
-    .btn-secondary { background: #e0e0e0; color: #333; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-    .btn-primary { background: var(--accent-btn); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-  </style>
-</head>
-<body>
-
-  <div id="status-bar">
-    <div class="status-indicator">
-      <div id="status-dot" class="status-dot loading"></div>
-      <span id="status-text">Connecting to Notion...</span>
-    </div>
-    <div>
-      <button class="btn-secondary" style="font-size:0.8rem; padding: 6px 12px;" onclick="openConfig()">Configure Settings</button>
-      <button class="btn-primary" style="font-size:0.8rem; padding: 6px 12px; margin-left: 5px;" onclick="fetchWardrobe()">🔄 Force Refresh</button>
-    </div>
-  </div>
-
-  <div id="log-overlay"></div>
-
-  <div class="app-container">
-    <div class="avatar-panel">
-      <h2>Interactive Fitting Room</h2>
-      <div class="fitting-room">
-        <svg class="doll-layer doll-base" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="25" r="12" fill="#e8c3b9" />
-          <path d="M 35 42 L 65 42 L 60 110 L 40 110 Z" fill="#f4dcd6" />
-          <rect x="41" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
-          <rect x="51" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
-        </svg>
-        <img id="wear-shoes" class="doll-layer layer-shoes" src="" style="display:none">
-        <img id="wear-bottom" class="doll-layer layer-bottom" src="" style="display:none">
-        <img id="wear-top" class="doll-layer layer-top" src="" style="display:none">
-        <img id="wear-outerwear" class="doll-layer layer-outerwear" src="" style="display:none">
-      </div>
-      <button class="outfit-btn" id="bulk-outfit-btn" onclick="bulkWearOutfit()">👕 Wore Entire Outfit</button>
-    </div>
-
-    <div class="wardrobe-panel" id="wardrobe-items"></div>
-  </div>
-
-  <div id="config-modal">
-    <div class="modal-content">
-      <h3 style="margin-bottom: 14px;">Credentials Settings</h3>
-      <div class="form-group">
-        <label>Notion API Key</label>
-        <input type="password" id="input-api-key" placeholder="secret_...">
-      </div>
-      <div class="form-group">
-        <label>Wardrobe Database ID</label>
-        <input type="text" id="input-db-id" placeholder="3a8f9c12b4e549118029c83fa1d7e21a">
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" onclick="closeConfig()">Cancel</button>
-        <button class="btn-primary" onclick="saveConfig()">Save Changes</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let credentials = {
-      api_key: localStorage.getItem('NOTION_API_KEY') || "YOUR_NOTION_INTEGRATION_TOKEN",
-      db_id: localStorage.getItem('DATABASE_ID') || "YOUR_WARDROBE_DATABASE_ID"
-    };
-
-    let closetData = [];
-    let activeOutfit = { Top: null, Bottom: null, Outerwear: null, Shoes: null };
-
-    function logError(msg, debug = '') {
-      const overlay = document.getElementById('log-overlay');
-      overlay.style.display = 'block';
-      overlay.innerText = `⚠️ ${msg}\n${debug}`;
-      document.getElementById('status-dot').className = "status-dot error";
-      document.getElementById('status-text').innerText = "Connection Failed";
-    }
-
-    function clearError() { document.getElementById('log-overlay').style.display = 'none'; }
-    function openConfig() {
-      document.getElementById('input-api-key').value = credentials.api_key;
-      document.getElementById('input-db-id').value = credentials.db_id;
-      document.getElementById('config-modal').style.display = 'flex';
-    }
-    function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
-
-    function saveConfig() {
-      const apiKey = document.getElementById('input-api-key').value.trim();
-      const dbId = document.getElementById('input-db-id').value.trim();
-      localStorage.setItem('NOTION_API_KEY', apiKey);
-      localStorage.setItem('DATABASE_ID', dbId);
-      credentials.api_key = apiKey;
-      credentials.db_id = dbId;
-      closeConfig();
-      fetchWardrobe();
-    }
-
-    function calculateDays(lastWashedDate) {
-      if (!lastWashedDate) return 999;
-      const washed = new Date(lastWashedDate);
-      const today = new Date();
-      return Math.floor(Math.abs(today - washed) / (1000 * 60 * 60 * 24));
-    }
-
-    async function fetchWardrobe() {
-      clearError();
-      document.getElementById('status-dot').className = "status-dot loading";
-      document.getElementById('status-text').innerText = "Loading closet database...";
-
-      if (!credentials.api_key || credentials.api_key.includes("YOUR_") || !credentials.db_id || credentials.db_id.includes("YOUR_")) {
-        logError("Integration credentials missing.", "Click 'Configure Settings' to save your token and Database ID.");
-        return;
-      }
-
-      // Direct fetch attempt first, falling back to cors-anywhere structure
-      const targetUrl = `https://api.notion.com/v1/databases/${credentials.db_id}/query`;
-
-      try {
-        let response = await fetch(targetUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${credentials.api_key}`,
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
-          }
-        }).catch(async () => {
-          // Backup via proxy header wrapper
-          return await fetch(`https://proxy.cors.sh/${targetUrl}`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${credentials.api_key}`,
-              "Notion-Version": "2022-06-28",
-              "Content-Type": "application/json",
-              "x-cors-api-key": "temp_b3a1a9e88383818e8a2a8b9283737"
-            }
-          });
-        });
-
-        if (!response || !response.ok) {
-          throw new Error(`HTTP Error ${response ? response.status : 'Blocked by CORS'}`);
-        }
-
-        const data = await response.json();
-        closetData = data.results;
-        
-        document.getElementById('status-dot').className = "status-dot";
-        document.getElementById('status-text').innerText = "Connected to Notion";
-        renderWardrobe();
-      } catch (err) {
-        logError("Could not connect to Notion API.", `${err.message}\n\nIf this persists, set up a free 1-minute Cloudflare Worker proxy (instructions below).`);
-      }
-    }
-
-    function tryOn(pageId, category) {
-      const selectedItem = closetData.find(item => item.id === pageId);
-      if (!selectedItem) return;
-
-      const imgUrl = selectedItem.properties.Photo?.files[0]?.file?.url || 
-                     selectedItem.properties.Photo?.files[0]?.external?.url || "";
-
-      const layerImg = document.getElementById(`wear-${category.toLowerCase()}`);
-      
-      if (activeOutfit[category] === pageId) {
-        activeOutfit[category] = null;
-        layerImg.style.display = 'none';
-        layerImg.src = '';
-      } else {
-        activeOutfit[category] = pageId;
-        layerImg.src = imgUrl;
-        layerImg.style.display = 'block';
-      }
-      renderWardrobe();
-    }
-
-    async function markWoreToday(pageId, currentWears, event) {
-      if (event) event.stopPropagation();
-      const btn = event ? event.target : null;
-      if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
-
-      const todayString = new Date().toISOString().split('T')[0];
-      const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
-
-      try {
-        await fetch(targetUrl, {
-          method: "PATCH",
-          headers: {
-            "Authorization": `Bearer ${credentials.api_key}`,
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            properties: {
-              "Wears Since Wash": { number: (currentWears || 0) + 1 },
-              "Last Wore": { date: { start: todayString } }
-            }
-          })
-        });
-        await fetchWardrobe();
-      } catch (err) {
-        alert(`Could not update item: ${err.message}`);
-        if (btn) { btn.innerText = "Wore Today"; btn.disabled = false; }
-      }
-    }
-
-    async function bulkWearOutfit() {
-      const activeIds = Object.values(activeOutfit).filter(id => id !== null);
-      if (activeIds.length === 0) {
-        alert("Select some clothes first!");
-        return;
-      }
-
-      const mButton = document.getElementById('bulk-outfit-btn');
-      mButton.innerText = "Saving to Notion...";
-      mButton.disabled = true;
-
-      const todayString = new Date().toISOString().split('T')[0];
-
-      for (const pageId of activeIds) {
-        const item = closetData.find(c => c.id === pageId);
-        const currentWears = item ? (item.properties["Wears Since Wash"]?.number || 0) : 0;
-        const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
-
-        try {
-          await fetch(targetUrl, {
-            method: "PATCH",
-            headers: {
-              "Authorization": `Bearer ${credentials.api_key}`,
-              "Notion-Version": "2022-06-28",
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              properties: {
-                "Wears Since Wash": { number: currentWears + 1 },
-                "Last Wore": { date: { start: todayString } }
-              }
-            })
-          });
-        } catch (e) {}
-      }
-
-      mButton.innerText = "👕 Wore Entire Outfit";
-      mButton.disabled = false;
-      fetchWardrobe();
-    }
-
-    function renderWardrobe() {
+function renderWardrobe() {
       const container = document.getElementById("wardrobe-items");
       container.innerHTML = "";
 
-      if (closetData.length === 0) {
-        container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 20px;">No wardrobe items found.</p>`;
+      if (!closetData || closetData.length === 0) {
+        container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 40px; font-size:1.1rem;">No items found in database. Check that your Notion database has rows added!</p>`;
         return;
       }
 
-      const categories = { Outerwear: [], Top: [], Bottom: [], Shoes: [] };
+      const categories = { Outerwear: [], Top: [], Bottom: [], Shoes: [], Other: [] };
 
       closetData.forEach(item => {
-        let cat = item.properties.Category?.select?.name;
-        if (cat === "Tops") cat = "Top";
-        if (cat === "Bottoms") cat = "Bottom";
-        if (categories[cat]) categories[cat].push(item);
+        let cat = item.properties.Category?.select?.name || "Other";
+        
+        // Auto-fix plural & variant tags
+        if (cat === "Tops" || cat === "Shirt" || cat === "Shirts") cat = "Top";
+        if (cat === "Bottoms" || cat === "Pants" || cat === "Trousers" || cat === "Jeans" || cat === "Skirts") cat = "Bottom";
+        if (cat === "Jackets" || cat === "Coats" || cat === "Cardigans") cat = "Outerwear";
+        if (cat === "Footwear" || cat === "Boots" || cat === "Sneakers") cat = "Shoes";
+
+        if (categories[cat]) {
+          categories[cat].push(item);
+        } else {
+          categories.Other.push(item);
+        }
       });
 
       for (const [category, items] of Object.entries(categories)) {
@@ -388,7 +31,7 @@
         const section = document.createElement("div");
         section.className = "category-section";
         section.innerHTML = `
-          <h3>${category}s <span>(${items.length})</span></h3>
+          <h3>${category}${category === 'Other' ? '' : 's'} <span>(${items.length})</span></h3>
           <div class="carousel" id="carousel-${category}"></div>
         `;
         container.appendChild(section);
@@ -415,7 +58,7 @@
           card.onclick = () => tryOn(clothing.id, category);
 
           card.innerHTML = `
-            ${imgUrl ? `<img src="${imgUrl}" alt="${name}">` : `<div style="height:120px; width:100%; background:#eee; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.7rem;">No Image</div>`}
+            ${imgUrl ? `<img src="${imgUrl}" alt="${name}">` : `<div style="height:120px; width:100%; background:#f0f0f0; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; opacity:0.6;">No Image</div>`}
             <div class="card-title">${name}</div>
             <div class="tag ${tagClass}">${tagText}</div>
             <button class="card-btn" onclick="markWoreToday('${clothing.id}', ${wears}, event)">Wore Today</button>
@@ -424,8 +67,3 @@
         });
       }
     }
-
-    fetchWardrobe();
-  </script>
-</body>
-</html>
