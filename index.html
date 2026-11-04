@@ -732,26 +732,31 @@ async function saveOutfit() {
   const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
   const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
 
-  // Build image block children for selected items
+  // Extract clean image links for selected items
   const imageBlocks = Object.entries(selectedOutfit)
     .filter(([_, item]) => item !== null && item.url)
     .map(([cat, item]) => {
-      // Decode proxied URL back to raw image URL for Notion
       let rawUrl = item.url;
       if (rawUrl.includes("url=")) {
         rawUrl = decodeURIComponent(rawUrl.split("url=")[1]);
       }
       return {
         object: "block",
-        type: "embed",
-        embed: { url: rawUrl }
+        type: "image",
+        image: {
+          type: "external",
+          external: { url: rawUrl }
+        }
       };
     });
 
+  // Target database ID (uses OUTFIT_LOG_DB_ID or falls back to WARDROBE_DB_ID)
+  const targetDbId = typeof OUTFIT_LOG_DB_ID !== 'undefined' ? OUTFIT_LOG_DB_ID : WARDROBE_DB_ID;
+
   const payload = {
-    parent: { database_id: WARDROBE_DB_ID },
+    parent: { database_id: targetDbId },
     properties: {
-      "name": {
+      "Name": {
         title: [
           { text: { content: `outfit - ${new Date().toLocaleDateString('en-GB')}` } }
         ]
@@ -785,15 +790,17 @@ async function saveOutfit() {
       body: JSON.stringify(payload)
     });
 
+    const resData = await response.json();
+
     if (response.ok) {
-      alert("outfit saved to notion with item images!");
+      alert("outfit saved to notion!");
     } else {
-      const errData = await response.json();
-      console.error("notion error:", errData);
-      alert("failed to save to notion. check console.");
+      console.error("Notion API Error Details:", resData);
+      alert(`failed to save to notion: ${resData.message || 'check console'}`);
     }
   } catch (err) {
     console.error("error saving to notion:", err);
+    alert("network error saving to notion.");
   }
 }
     fetchFromNotion();
