@@ -249,42 +249,39 @@
         "Notion-Version": "2022-06-28",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({}) // removed status filter to fetch everything
+      body: JSON.stringify({
+        filter: {
+          property: "status",
+          select: { equals: "clean" } // strictly fetch clean items
+        }
+      })
     });
 
     const data = await response.json();
-    console.log("Notion API raw response:", data);
-
-    if (!data.results || data.results.length === 0) {
-      console.warn("No pages returned from Notion database.");
-      return;
-    }
+    if (!data.results) return;
 
     wardrobeItems = data.results.map(page => {
       const props = page.properties;
       
-      // Get item name
-      const name = props.Name?.title?.[0]?.plain_text?.toLowerCase() 
-                || props.Title?.title?.[0]?.plain_text?.toLowerCase() 
-                || "unnamed";
+      // 1. Get exact item title from "name" property
+      const titleObj = props.name || props.Name || props.Title;
+      const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
 
-      // Get category
-      const category = props.Category?.select?.name?.toLowerCase() || "top";
-      
-      // Extract file URL from Files & Media column or text column
+      // 2. Normalize plural category names (e.g. "bottoms" -> "bottom")
+      let cat = props.category?.select?.name?.toLowerCase() || "top";
+      if (cat === "bottoms") cat = "bottom";
+      if (cat === "shoes" || cat === "shoe") cat = "shoes";
+
+      // 3. Extract file URL from "image url" property
       let rawImgUrl = "";
-      for (const propKey in props) {
-        const prop = props[propKey];
-        if (prop.type === "files" && prop.files?.[0]) {
-          rawImgUrl = prop.files[0].file?.url || prop.files[0].external?.url || "";
-          break;
-        } else if (prop.type === "url" && prop.url) {
-          rawImgUrl = prop.url;
-          break;
-        } else if (prop.type === "rich_text" && prop.rich_text?.[0]?.plain_text?.startsWith("http")) {
-          rawImgUrl = prop.rich_text[0].plain_text;
-          break;
-        }
+      const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
+      
+      if (imgProp?.files?.[0]) {
+        rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
+      } else if (imgProp?.url) {
+        rawImgUrl = imgProp.url;
+      } else if (imgProp?.rich_text?.[0]?.plain_text) {
+        rawImgUrl = imgProp.rich_text[0].plain_text;
       }
 
       // Proxy image through Cloudflare Worker
@@ -292,8 +289,8 @@
 
       return {
         id: page.id,
-        name: name,
-        category: category,
+        name: itemName,
+        category: cat,
         url: proxiedImgUrl
       };
     });
