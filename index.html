@@ -78,6 +78,7 @@
       color: #ffffff;
     }
 
+    /* search and filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -87,12 +88,18 @@
       padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       box-shadow: 0 4px 15px rgba(244, 194, 194, 0.1);
     }
 
-    .search-input {
+    .search-row {
+      display: flex;
+      gap: 10px;
       width: 100%;
+    }
+
+    .search-input {
+      flex: 1;
       padding: 10px 14px;
       border: 1px solid rgba(244, 194, 194, 0.5);
       border-radius: var(--radius-md);
@@ -103,6 +110,17 @@
     }
 
     .search-input::placeholder { color: var(--subtext); }
+
+    .colour-select {
+      padding: 10px 14px;
+      border: 1px solid rgba(244, 194, 194, 0.5);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-color);
+      outline: none;
+      cursor: pointer;
+    }
 
     .tag-filters {
       display: flex;
@@ -174,7 +192,6 @@
       height: 100%;
     }
 
-    /* switches panel */
     .controls-panel {
       width: 100%;
       display: flex;
@@ -194,7 +211,6 @@
       color: var(--text-color);
     }
 
-    /* custom toggle switch */
     .switch {
       position: relative;
       display: inline-block;
@@ -363,7 +379,12 @@
 
     <!-- search & filter bar -->
     <div class="filter-bar">
-      <input type="text" class="search-input" id="search-box" placeholder="search items by name, color, tag..." oninput="applyFilters()" />
+      <div class="search-row">
+        <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="applyFilters()" />
+        <select class="colour-select" id="colour-select" onchange="applyFilters()">
+          <option value="">all colours</option>
+        </select>
+      </div>
       <div class="tag-filters" id="tag-chips"></div>
     </div>
 
@@ -376,7 +397,6 @@
           <canvas id="outfit-canvas" width="300" height="330"></canvas>
         </div>
 
-        <!-- simple switches for bra & tights -->
         <div class="controls-panel">
           <div class="control-item">
             <span>push-up bra</span>
@@ -486,8 +506,20 @@
           if (cat === "bottoms") cat = "bottom";
           if (cat === "dress") cat = "dresses";
 
-          const colors = props.color?.multi_select?.map(c => c.name.toLowerCase()) || [];
-          const tags = props.tags?.multi_select?.map(t => t.name.toLowerCase()) || [];
+          // Extract Colour/Color property dynamically
+          const colourProp = props.colour || props.Colour || props.color || props.Color;
+          const colors = [];
+          if (colourProp?.multi_select) {
+            colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
+          } else if (colourProp?.select?.name) {
+            colors.push(colourProp.select.name.toLowerCase());
+          } else if (colourProp?.rich_text?.[0]?.plain_text) {
+            colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
+          }
+
+          // Extract Tags
+          const tagsProp = props.tags || props.Tags;
+          const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
 
           let rawImgUrl = "";
           const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
@@ -509,6 +541,7 @@
           };
         });
 
+        populateColourDropdown();
         buildTagChips();
         renderCarousels(wardrobeItems);
         drawOutfitCanvas();
@@ -517,10 +550,20 @@
       }
     }
 
+    function populateColourDropdown() {
+      const allColours = new Set();
+      wardrobeItems.forEach(item => {
+        item.colors.forEach(c => allColours.add(c));
+      });
+
+      const select = document.getElementById("colour-select");
+      select.innerHTML = '<option value="">all colours</option>' + 
+        Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
     function buildTagChips() {
       const allTags = new Set();
       wardrobeItems.forEach(item => {
-        item.colors.forEach(c => allTags.add(c));
         item.tags.forEach(t => allTags.add(t));
       });
 
@@ -543,17 +586,14 @@
 
     function applyFilters() {
       const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
+      const selectedColour = document.getElementById("colour-select").value.toLowerCase();
 
       const filtered = wardrobeItems.filter(item => {
-        const matchesSearch = !searchQuery || 
-          item.name.includes(searchQuery) ||
-          item.colors.some(c => c.includes(searchQuery)) ||
-          item.tags.some(t => t.includes(searchQuery));
+        const matchesSearch = !searchQuery || item.name.includes(searchQuery);
+        const matchesColour = !selectedColour || item.colors.includes(selectedColour);
+        const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
 
-        const matchesTags = activeTags.size === 0 || 
-          Array.from(activeTags).every(t => item.colors.includes(t) || item.tags.includes(t));
-
-        return matchesSearch && matchesTags;
+        return matchesSearch && matchesColour && matchesTags;
       });
 
       renderCarousels(filtered);
@@ -628,4 +668,81 @@
       await new Promise((resolve) => {
         const personImg = new Image();
         personImg.src = PERSON_IMAGE_URL;
-        personImg.onload =
+        personImg.onload = () => {
+          const personHeight = 310;
+          const personWidth = 140;
+          const xPos = (rect.width - personWidth) / 2;
+          ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
+          resolve();
+        };
+        personImg.onerror = () => resolve();
+      });
+
+      // 2. LAYER CLOTHING
+      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
+
+      for (const layer of layers) {
+        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
+          await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = selectedOutfit[layer].url;
+            img.onload = () => {
+              let size = 110;
+              let yPos = 45;
+              let xPos = (rect.width - size) / 2;
+
+              if (layer === 'dresses') {
+                size = 140;
+                yPos = 45;
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'top') { 
+                size = 110; 
+                yPos = 45; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'bottom') { 
+                size = 145; 
+                yPos = 148; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'shoes') { 
+                size = 80; 
+                yPos = 245; 
+                xPos = (rect.width - size) / 2;
+              }
+              if (layer === 'outerwear') { 
+                size = 120; 
+                yPos = 55;
+                xPos = rect.width - size - 10;
+              }
+
+              ctx.drawImage(img, xPos, yPos, size, size);
+              resolve();
+            };
+            img.onerror = () => resolve();
+          });
+        }
+      }
+    }
+
+    function saveOutfit() {
+      const canvas = document.getElementById('outfit-canvas');
+      const imageDataUrl = canvas.toDataURL('image/png');
+
+      const payload = {
+        image: imageDataUrl,
+        items: selectedOutfit,
+        bra: document.getElementById('bra-switch').checked,
+        tights: document.getElementById('tights-switch').checked
+      };
+
+      console.log("Outfit payload ready for Notion:", payload);
+      alert("outfit saved with switches!");
+    }
+
+    fetchFromNotion();
+  </script>
+</body>
+</html>
