@@ -442,62 +442,76 @@
       drawOutfitCanvas();
     }
 
-    async function drawOutfitCanvas() {
-      const canvas = document.getElementById('outfit-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
+   async function drawOutfitCanvas() {
+  const canvas = document.getElementById('outfit-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
 
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, rect.width, rect.height);
 
-      // 1. DRAW CUTE PERSON PNG BASE
+  // 1. DRAW CUTE PERSON PNG BASE
+  await new Promise((resolve) => {
+    const personImg = new Image();
+    personImg.src = PERSON_IMAGE_URL;
+    personImg.onload = () => {
+      const personHeight = 310;
+      const personWidth = 140;
+      const xPos = (rect.width - personWidth) / 2;
+      ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
+      resolve();
+    };
+    personImg.onerror = () => resolve();
+  });
+
+  // 2. LAYER CLOTHING
+  // Order: bottoms -> tops -> shoes -> outerwear (side-positioned)
+  const layers = ['bottom', 'top', 'shoes', 'outerwear'];
+
+  for (const layer of layers) {
+    if (selectedOutfit[layer] && selectedOutfit[layer].url) {
       await new Promise((resolve) => {
-        const personImg = new Image();
-        personImg.src = PERSON_IMAGE_URL;
-        personImg.onload = () => {
-          const personHeight = 310;
-          const personWidth = 140;
-          const xPos = (rect.width - personWidth) / 2;
-          ctx.drawImage(personImg, xPos, 15, personWidth, personHeight);
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = selectedOutfit[layer].url;
+        img.onload = () => {
+          let size = 130;
+          let yPos = 50;
+          let xPos = (rect.width - size) / 2; // default center alignment
+
+          if (layer === 'top') { 
+            size = 135; 
+            yPos = 42; // slightly raised top position
+          }
+          if (layer === 'bottom') { 
+            size = 130; 
+            yPos = 135; // lowered bottoms so top doesn't cover them
+          }
+          if (layer === 'shoes') { 
+            size = 85; 
+            yPos = 235; 
+          }
+          if (layer === 'outerwear') { 
+            size = 130; 
+            yPos = 55;
+            xPos = rect.width - size - 10; // shifted to the right side of the canvas
+          }
+
+          ctx.drawImage(img, xPos, yPos, size, size);
           resolve();
         };
-        personImg.onerror = () => resolve(); // skip gracefully if person.png isn't added yet
+        img.onerror = () => resolve();
       });
-
-      // 2. LAYER CLOTHING ON TOP OF PERSON
-      const layers = ['bottom', 'top', 'outerwear', 'shoes'];
-
-      for (const layer of layers) {
-        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
-          await new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = selectedOutfit[layer].url;
-            img.onload = () => {
-              let size = 130;
-              let yPos = 50;
-
-              if (layer === 'top') { size = 135; yPos = 48; }
-              if (layer === 'bottom') { size = 130; yPos = 110; }
-              if (layer === 'outerwear') { size = 150; yPos = 40; }
-              if (layer === 'shoes') { size = 90; yPos = 225; }
-
-              const xPos = (rect.width - size) / 2;
-              ctx.drawImage(img, xPos, yPos, size, size);
-              resolve();
-            };
-            img.onerror = () => resolve();
-          });
-        }
-      }
     }
+  }
+}
 
     function saveOutfit() {
       const canvas = document.getElementById('outfit-canvas');
