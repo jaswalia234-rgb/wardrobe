@@ -32,7 +32,7 @@
       margin: 0 auto;
     }
 
-    /* Connection Status */
+    /* Top Status Bar */
     #status-bar {
       display: flex;
       justify-content: space-between;
@@ -84,7 +84,7 @@
       }
     }
 
-    /* Left panel: Avatar */
+    /* Fitting Room Panel */
     .avatar-panel {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
@@ -106,13 +106,16 @@
 
     .fitting-room {
       position: relative;
-      width: 180px;
+      width: 200px;
       height: 380px;
-      background: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.5);
       border-radius: 16px;
       overflow: hidden;
       margin-bottom: 20px;
-      border: 1px dashed rgba(0,0,0,0.08);
+      border: 1px dashed rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .doll-layer {
@@ -126,16 +129,13 @@
       pointer-events: none;
     }
 
-    .doll-base {
-      z-index: 1;
-    }
-
+    .doll-base { z-index: 1; opacity: 0.8; }
     .layer-shoes { z-index: 2; }
     .layer-bottom { z-index: 3; }
     .layer-top { z-index: 4; }
     .layer-outerwear { z-index: 5; }
 
-    /* Wardrobe / Right panel */
+    /* Wardrobe Rails */
     .wardrobe-panel {
       display: flex;
       flex-direction: column;
@@ -146,9 +146,6 @@
       font-size: 1.1rem;
       font-weight: 600;
       margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
     .carousel {
@@ -160,16 +157,9 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    .carousel::-webkit-scrollbar {
-      height: 4px;
-    }
+    .carousel::-webkit-scrollbar { height: 4px; }
+    .carousel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
 
-    .carousel::-webkit-scrollbar-thumb {
-      background: rgba(0,0,0,0.1);
-      border-radius: 4px;
-    }
-
-    /* Cards */
     .card {
       flex: 0 0 150px;
       scroll-snap-align: start;
@@ -184,14 +174,8 @@
       cursor: pointer;
     }
 
-    .card:hover {
-      transform: translateY(-2px);
-    }
-
-    .card.equipped {
-      border-color: var(--accent-pink);
-      box-shadow: 0 0 0 2px var(--accent-pink);
-    }
+    .card:hover { transform: translateY(-2px); }
+    .card.equipped { border-color: var(--accent-pink); box-shadow: 0 0 0 2px var(--accent-pink); }
 
     .card img {
       width: 100%;
@@ -237,7 +221,6 @@
 
     .card-btn:hover { background: var(--accent-btn-hover); }
 
-    /* Giant Button */
     .outfit-btn {
       width: 100%;
       padding: 14px;
@@ -252,10 +235,8 @@
       transition: all 0.2s;
     }
 
-    .outfit-btn:hover { background: var(--accent-btn-hover); transform: translateY(-1px); }
-    .outfit-btn:active { transform: translateY(1px); }
+    .outfit-btn:hover { background: var(--accent-btn-hover); }
 
-    /* System Log modal or error overlay */
     #log-overlay {
       display: none;
       background: rgba(251, 238, 241, 0.98);
@@ -269,7 +250,6 @@
       white-space: pre-wrap;
     }
 
-    /* Modal dialog configuration override */
     #config-modal {
       display: none;
       position: fixed;
@@ -286,59 +266,18 @@
       border-radius: 18px;
       width: 90%;
       max-width: 450px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
     }
 
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 0.9rem;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .btn-secondary {
-      background: #e0e0e0;
-      color: #333;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      background: var(--accent-btn);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+    .btn-secondary { background: #e0e0e0; color: #333; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: var(--accent-btn); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <!-- Top bar status -->
   <div id="status-bar">
     <div class="status-indicator">
       <div id="status-dot" class="status-dot loading"></div>
@@ -350,18 +289,20 @@
     </div>
   </div>
 
-  <!-- Diagnostis Log Overlay -->
   <div id="log-overlay"></div>
 
-  <!-- Main view grid -->
   <div class="app-container">
-    
-    <!-- Left visual Doll stage -->
     <div class="avatar-panel">
       <h2>Interactive Fitting Room</h2>
       <div class="fitting-room">
-        <!-- Human Avatar placeholder - Replace with transparent Base if desired -->
-        <img class="doll-layer doll-base" src="https://i.imgur.com/vHq06hD.png" alt="Base">
+        <!-- SVG Mannequin Base -->
+        <svg class="doll-layer doll-base" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="25" r="12" fill="#e8c3b9" />
+          <path d="M 35 42 L 65 42 L 60 110 L 40 110 Z" fill="#f4dcd6" />
+          <rect x="41" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
+          <rect x="51" y="110" width="8" height="75" rx="3" fill="#e8c3b9" />
+        </svg>
+
         <img id="wear-shoes" class="doll-layer layer-shoes" src="" style="display:none">
         <img id="wear-bottom" class="doll-layer layer-bottom" src="" style="display:none">
         <img id="wear-top" class="doll-layer layer-top" src="" style="display:none">
@@ -370,14 +311,9 @@
       <button class="outfit-btn" id="bulk-outfit-btn" onclick="bulkWearOutfit()">👕 Wore Entire Outfit</button>
     </div>
 
-    <!-- Scrollable category rails -->
-    <div class="wardrobe-panel" id="wardrobe-items">
-      <!-- Generated rows of clothing will populate here -->
-    </div>
-
+    <div class="wardrobe-panel" id="wardrobe-items"></div>
   </div>
 
-  <!-- Settings overlay configuration -->
   <div id="config-modal">
     <div class="modal-content">
       <h3 style="margin-bottom: 14px;">Credentials Settings</h3>
@@ -397,81 +333,60 @@
   </div>
 
   <script>
-    // System Constants utilizing AllOrigins for open, reliable proxies
-    const PROXY_URL = 'https://api.allorigins.win/raw?url=';
-    
-    // Config state
+    // Universal CORS Proxy via corsproxy.org
+    const PROXY_URL = 'https://corsproxy.org/?';
+
     let credentials = {
       api_key: localStorage.getItem('NOTION_API_KEY') || "YOUR_NOTION_INTEGRATION_TOKEN",
       db_id: localStorage.getItem('DATABASE_ID') || "YOUR_WARDROBE_DATABASE_ID"
     };
 
     let closetData = [];
-    let activeOutfit = {
-      Top: null,
-      Bottom: null,
-      Outerwear: null,
-      Shoes: null
-    };
+    let activeOutfit = { Top: null, Bottom: null, Outerwear: null, Shoes: null };
 
-    // Diagnostic console helpers
     function logError(msg, debug = '') {
       const overlay = document.getElementById('log-overlay');
       overlay.style.display = 'block';
       overlay.innerText = `⚠️ ${msg}\n${debug}`;
-      
-      const dot = document.getElementById('status-dot');
-      dot.className = "status-dot error";
+      document.getElementById('status-dot').className = "status-dot error";
       document.getElementById('status-text').innerText = "Connection Failed";
     }
 
-    function clearError() {
-      document.getElementById('log-overlay').style.display = 'none';
-    }
+    function clearError() { document.getElementById('log-overlay').style.display = 'none'; }
 
-    // Modal view handlers
     function openConfig() {
       document.getElementById('input-api-key').value = credentials.api_key;
       document.getElementById('input-db-id').value = credentials.db_id;
       document.getElementById('config-modal').style.display = 'flex';
     }
 
-    function closeConfig() {
-      document.getElementById('config-modal').style.display = 'none';
-    }
+    function closeConfig() { document.getElementById('config-modal').style.display = 'none'; }
 
     function saveConfig() {
       const apiKey = document.getElementById('input-api-key').value.trim();
       const dbId = document.getElementById('input-db-id').value.trim();
-      
       localStorage.setItem('NOTION_API_KEY', apiKey);
       localStorage.setItem('DATABASE_ID', dbId);
-      
       credentials.api_key = apiKey;
       credentials.db_id = dbId;
-      
       closeConfig();
       fetchWardrobe();
     }
 
-    // Days counter math helper
     function calculateDays(lastWashedDate) {
       if (!lastWashedDate) return 999;
       const washed = new Date(lastWashedDate);
       const today = new Date();
-      const diffTime = Math.abs(today - washed);
-      return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      return Math.floor(Math.abs(today - washed) / (1000 * 60 * 60 * 24));
     }
 
-    // Main fetch pipeline using allorigins raw proxy
     async function fetchWardrobe() {
       clearError();
-      const dot = document.getElementById('status-dot');
-      dot.className = "status-dot loading";
+      document.getElementById('status-dot').className = "status-dot loading";
       document.getElementById('status-text').innerText = "Loading closet database...";
 
       if (!credentials.api_key || credentials.api_key.includes("YOUR_") || !credentials.db_id || credentials.db_id.includes("YOUR_")) {
-        logError("Integration credentials have not been configured yet.", "Press the 'Configure Settings' button to save your real token and Database ID!");
+        logError("Integration credentials missing.", "Click 'Configure Settings' to save your token and Database ID.");
         return;
       }
 
@@ -490,22 +405,20 @@
 
         if (!response.ok) {
           const errBody = await response.text();
-          throw new Error(`Notion Response: HTTP ${response.status} -> ${errBody}`);
+          throw new Error(`HTTP ${response.status}: ${errBody}`);
         }
 
         const data = await response.json();
         closetData = data.results;
         
-        dot.className = "status-dot";
+        document.getElementById('status-dot').className = "status-dot";
         document.getElementById('status-text').innerText = "Connected to Notion";
-        
         renderWardrobe();
       } catch (err) {
-        logError("The API request was aborted or failed to parse.", err.message);
+        logError("Could not connect to Notion API.", err.message);
       }
     }
 
-    // Selection on avatar stage
     function tryOn(pageId, category) {
       const selectedItem = closetData.find(item => item.id === pageId);
       if (!selectedItem) return;
@@ -516,24 +429,19 @@
       const layerImg = document.getElementById(`wear-${category.toLowerCase()}`);
       
       if (activeOutfit[category] === pageId) {
-        // Toggle Off
         activeOutfit[category] = null;
         layerImg.style.display = 'none';
         layerImg.src = '';
       } else {
-        // Equip On
         activeOutfit[category] = pageId;
         layerImg.src = imgUrl;
         layerImg.style.display = 'block';
       }
-
       renderWardrobe();
     }
 
-    // Single item write back
     async function markWoreToday(pageId, currentWears, event) {
-      if (event) event.stopPropagation(); // Stop trigger on tryOn click
-      
+      if (event) event.stopPropagation();
       const btn = event ? event.target : null;
       if (btn) { btn.innerText = "Saving..."; btn.disabled = true; }
 
@@ -557,42 +465,34 @@
           })
         });
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        await fetchWardrobe(); // Sync fresh UI counts
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        await fetchWardrobe();
       } catch (err) {
-        alert(`Could not log outfit: ${err.message}`);
+        alert(`Could not update item: ${err.message}`);
         if (btn) { btn.innerText = "Wore Today"; btn.disabled = false; }
       }
     }
 
-    // Perform massive save for everything layered on Avatar
     async function bulkWearOutfit() {
       const activeIds = Object.values(activeOutfit).filter(id => id !== null);
       if (activeIds.length === 0) {
-        alert("Put some clothes on the doll first by selecting them!");
+        alert("Select some clothes first!");
         return;
       }
 
       const mButton = document.getElementById('bulk-outfit-btn');
-      mButton.innerText = "Saving Outfits to Notion...";
+      mButton.innerText = "Saving to Notion...";
       mButton.disabled = true;
 
       const todayString = new Date().toISOString().split('T')[0];
-      let errors = [];
 
-      // Sequentially write all updates
       for (const pageId of activeIds) {
         const item = closetData.find(c => c.id === pageId);
         const currentWears = item ? (item.properties["Wears Since Wash"]?.number || 0) : 0;
-        
         const targetUrl = `https://api.notion.com/v1/pages/${pageId}`;
-        const proxiedUrl = PROXY_URL + encodeURIComponent(targetUrl);
 
         try {
-          const response = await fetch(proxiedUrl, {
+          await fetch(PROXY_URL + encodeURIComponent(targetUrl), {
             method: "PATCH",
             headers: {
               "Authorization": `Bearer ${credentials.api_key}`,
@@ -606,32 +506,20 @@
               }
             })
           });
-
-          if (!response.ok) throw new Error();
-        } catch (err) {
-          errors.push(item ? item.properties.Name?.title[0]?.plain_text : "Unknown item");
-        }
+        } catch (e) {}
       }
 
       mButton.innerText = "👕 Wore Entire Outfit";
       mButton.disabled = false;
-
-      if (errors.length > 0) {
-        alert(`Wore standard pieces, but could not update: ${errors.join(', ')}`);
-      } else {
-        alert("Entire Outfit success and tracked in Notion!");
-      }
-
       fetchWardrobe();
     }
 
-    // Dynamic UI builder by category rails
     function renderWardrobe() {
       const container = document.getElementById("wardrobe-items");
       container.innerHTML = "";
 
       if (closetData.length === 0) {
-        container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 20px;">No wardrobe items found. Use Notion connect or confirm database contains correct entries.</p>`;
+        container.innerHTML = `<p style="opacity:0.6; text-align:center; padding: 20px;">No wardrobe items found.</p>`;
         return;
       }
 
@@ -639,13 +527,9 @@
 
       closetData.forEach(item => {
         let cat = item.properties.Category?.select?.name;
-        // Fix pluralizations
         if (cat === "Tops") cat = "Top";
         if (cat === "Bottoms") cat = "Bottom";
-        
-        if (categories[cat]) {
-          categories[cat].push(item);
-        }
+        if (categories[cat]) categories[cat].push(item);
       });
 
       for (const [category, items] of Object.entries(categories)) {
@@ -653,7 +537,6 @@
 
         const section = document.createElement("div");
         section.className = "category-section";
-        
         section.innerHTML = `
           <h3>${category}s <span>(${items.length})</span></h3>
           <div class="carousel" id="carousel-${category}"></div>
@@ -663,7 +546,7 @@
         const carousel = section.querySelector(`.carousel`);
 
         items.forEach(clothing => {
-          const name = clothing.properties.Name?.title[0]?.plain_text || "Untitled Piece";
+          const name = clothing.properties.Name?.title[0]?.plain_text || "Untitled";
           const imgUrl = clothing.properties.Photo?.files[0]?.file?.url || 
                          clothing.properties.Photo?.files[0]?.external?.url || "";
           const lastWashed = clothing.properties["Last Washed"]?.date?.start;
@@ -672,7 +555,6 @@
 
           let tagClass = "tag-fresh";
           let tagText = `${wears} wears · Washed ${days === 999 ? 'N/A' : days + 'd ago'}`;
-          
           if (wears >= 3 || days > 7) tagClass = "tag-warn";
           if (wears >= 5 || days > 14) { tagClass = "tag-wash"; tagText = "Wash Recommended!"; }
 
@@ -683,7 +565,7 @@
           card.onclick = () => tryOn(clothing.id, category);
 
           card.innerHTML = `
-            ${imgUrl ? `<img src="${imgUrl}" alt="${name}">` : `<div style="height:120px; width:100%; background:#eee; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:#888;">No Image</div>`}
+            ${imgUrl ? `<img src="${imgUrl}" alt="${name}">` : `<div style="height:120px; width:100%; background:#eee; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:0.7rem;">No Image</div>`}
             <div class="card-title">${name}</div>
             <div class="tag ${tagClass}">${tagText}</div>
             <button class="card-btn" onclick="markWoreToday('${clothing.id}', ${wears}, event)">Wore Today</button>
@@ -693,7 +575,6 @@
       }
     }
 
-    // On Load start sync
     fetchWardrobe();
   </script>
 </body>
