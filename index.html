@@ -2,195 +2,736 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wardrobe & Outfit Picker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Paper-Doll Virtual Wardrobe</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     :root {
       --bg-color: #fbeef1;
-      --card-bg: rgba(255, 255, 255, 0.7);
+      --card-bg: rgba(255, 255, 255, 0.72);
       --card-border: rgba(255, 255, 255, 0.9);
-      --text-color: #4a3e3d;
-      --accent-btn: #e8a5b8;
-      --accent-btn-hover: #d992a6;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      --text-main: #4a3e3d;
+      --accent-pink: #e8a5b8;
+      --accent-hover: #d992a6;
+      --accent-dark: #7a4e5a;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg-color);
-      color: var(--text-color);
-      padding: 20px 16px;
-      max-width: 900px;
-      margin: 0 auto;
+      color: var(--text-main);
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
     }
 
-    h1 {
-      text-align: center;
-      font-weight: 400;
-      font-size: 1.8rem;
-      margin-bottom: 24px;
-      letter-spacing: -0.5px;
-    }
-
-    #loading {
-      text-align: center;
-      padding: 40px;
-      font-size: 1rem;
-      opacity: 0.7;
-      word-break: break-word;
-    }
-
-    .category-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      margin: 24px 0 12px 4px;
-      text-transform: capitalize;
-      letter-spacing: -0.3px;
-    }
-
-    .carousel {
-      display: flex;
-      gap: 14px;
-      overflow-x: auto;
-      padding-bottom: 12px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .carousel::-webkit-scrollbar {
-      height: 6px;
-    }
-
-    .carousel::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-    }
-
-    .card {
-      flex: 0 0 200px;
-      scroll-snap-align: start;
+    .glass-panel {
       background: var(--card-bg);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: transform 0.2s ease;
+      box-shadow: 0 10px 30px rgba(220, 180, 190, 0.18);
     }
 
-    .card:active {
-      transform: scale(0.98);
-    }
-
-    .card img {
+    /* Mannequin Stage Aspect Ratio & Layering */
+    .mannequin-stage {
+      position: relative;
       width: 100%;
-      height: 170px;
-      object-fit: cover;
-      border-radius: 12px;
-      background-color: #ffffff;
-      margin-bottom: 10px;
-    }
-
-    .no-img {
-      width: 100%;
-      height: 170px;
-      border-radius: 12px;
-      background-color: rgba(255, 255, 255, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      opacity: 0.5;
-      margin-bottom: 10px;
-    }
-
-    .card-title {
-      font-weight: 600;
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-      text-align: center;
-      white-space: nowrap;
+      max-width: 320px;
+      height: 520px;
+      margin: 0 auto;
+      border-radius: 28px;
       overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, rgba(251,238,241,0.5) 100%);
     }
 
-    .tag {
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-      font-weight: 500;
-      text-align: center;
+    .mannequin-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .tag-fresh { background-color: #d4edda; color: #155724; }
-    .tag-warn  { background-color: #fff3cd; color: #856404; }
-    .tag-wash  { background-color: #f8d7da; color: #721c24; }
+    .clothing-layer {
+      filter: drop-shadow(0px 8px 12px rgba(90, 60, 70, 0.18));
+    }
 
-    button {
-      width: 100%;
-      padding: 9px 0;
-      border: none;
-      border-radius: 12px;
-      background-color: var(--accent-btn);
-      color: #ffffff;
-      font-size: 0.85rem;
-      font-weight: 600;
+    /* Carousels */
+    .carousel-container {
+      display: flex;
+      gap: 12px;
+      overflow-x: auto;
+      padding: 6px 2px 12px 2px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .carousel-container::-webkit-scrollbar {
+      height: 5px;
+    }
+
+    .carousel-container::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
+    }
+
+    .carousel-container::-webkit-scrollbar-thumb {
+      background: var(--accent-pink);
+      border-radius: 10px;
+    }
+
+    .clothing-card {
+      flex: 0 0 110px;
+      scroll-snap-align: start;
+      transition: all 0.2s ease;
       cursor: pointer;
-      transition: background-color 0.2s, opacity 0.2s;
     }
 
-    button:hover { background-color: var(--accent-btn-hover); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .clothing-card.active-equipped {
+      border-color: var(--accent-pink);
+      box-shadow: 0 0 0 2px var(--accent-pink), 0 8px 20px rgba(232, 165, 184, 0.3);
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    /* Custom Switch Toggle */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 22px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent-pink);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
   </style>
 </head>
-<body>
+<body class="min-h-screen pb-12">
 
-  <h1>Wardrobe Selector</h1>
-  <div id="loading">Loading your closet...</div>
-  <div id="app"></div>
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-30 px-6 py-3.5 glass-panel mb-6 border-b border-white/80">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-[#f4cad6] flex items-center justify-center text-[#7a4e5a] shadow-sm">
+          <i class="fa-solid fa-vest text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-semibold text-lg tracking-tight text-[#4a3e3d]">Virtual Fitting Room</h1>
+          <p class="text-[11px] text-[#8c7479]" id="status-subtitle">Interactive Paper-Doll Wardrobe</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <!-- Demo Mode Toggle -->
+        <div class="flex items-center space-x-2 bg-white/60 px-3 py-1.5 rounded-full border border-white/70 shadow-sm">
+          <span class="text-[11px] font-medium text-[#6e585d]">Demo Mode</span>
+          <label class="switch">
+            <input type="checkbox" id="demo-toggle" onchange="toggleDemoMode(this.checked)" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <!-- Sync Button -->
+        <button onclick="loadWardrobe()" class="w-9 h-9 rounded-full bg-white/80 hover:bg-white text-[#6e585d] flex items-center justify-center transition shadow-sm" title="Refresh">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+        </button>
+
+        <!-- Settings Modal Button -->
+        <button onclick="openSettings()" class="w-9 h-9 rounded-full bg-white/80 hover:bg-white text-[#6e585d] flex items-center justify-center transition shadow-sm" title="Notion Setup">
+          <i class="fa-solid fa-gear text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="max-w-7xl mx-auto px-4 md:px-6">
+
+    <!-- Diagnostic Banner (Error State) -->
+    <div id="diagnostic-banner" class="hidden mb-6 p-4 rounded-2xl bg-rose-50/90 border border-rose-200 text-rose-800 backdrop-blur-md">
+      <div class="flex items-start space-x-3">
+        <i class="fa-solid fa-circle-exclamation text-xl mt-0.5 text-rose-500"></i>
+        <div class="flex-1">
+          <h3 class="font-semibold text-xs" id="diag-title">Connection Alert</h3>
+          <p class="text-[11px] mt-1 leading-relaxed" id="diag-msg">Unable to load wardrobe items.</p>
+          <div class="mt-2.5 flex space-x-2 text-[11px] font-medium">
+            <button onclick="openSettings()" class="px-3 py-1 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition">Configure Credentials</button>
+            <button onclick="enableDemoMode()" class="px-3 py-1 bg-white text-rose-700 border border-rose-200 rounded-lg hover:bg-rose-50 transition">Switch to Demo Mode</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Workspace Layout: Mannequin Stage (Left/Center) + Stacked Category Carousels (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- CENTER: Virtual Mannequin Display Stage -->
+      <section class="lg:col-span-5 flex flex-col items-center">
+        <div class="w-full glass-panel rounded-3xl p-5 border border-white/90 relative flex flex-col items-center">
+          
+          <!-- Stage Top Bar Controls -->
+          <div class="w-full flex items-center justify-between mb-2 px-1">
+            <span class="text-xs font-semibold uppercase tracking-wider text-[#7a4e5a]">
+              <i class="fa-solid fa-person-dots-from-line mr-1"></i> Avatar View
+            </span>
+            <button onclick="resetOutfit()" class="text-[11px] font-semibold text-rose-500 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-100 transition">
+              <i class="fa-solid fa-rotate-left mr-1"></i> Strip Avatar
+            </button>
+          </div>
+
+          <!-- The Layered Fitting Stage -->
+          <div class="mannequin-stage shadow-inner border border-white/80">
+            <!-- Base Mannequin Silhouette SVG -->
+            <svg class="mannequin-layer opacity-40 p-4" viewBox="0 0 200 600" xmlns="http://www.w3.org/2000/svg">
+              <!-- Head & Neck -->
+              <circle cx="100" cy="65" r="28" fill="#a88c94"/>
+              <path d="M92 90 h16 v25 h-16 z" fill="#a88c94"/>
+              <!-- Shoulders & Torso -->
+              <path d="M55 115 C 75 110, 125 110, 145 115 C 152 135, 142 220, 130 250 C 122 270, 78 270, 70 250 C 58 220, 48 135, 55 115 Z" fill="#bfa3ab"/>
+              <!-- Arms -->
+              <path d="M52 118 C 42 150, 38 210, 42 250 C 45 255, 50 255, 52 245 C 48 210, 52 150, 60 125 Z" fill="#a88c94"/>
+              <path d="M148 118 C 158 150, 162 210, 158 250 C 155 255, 150 255, 148 245 C 152 210, 148 150, 140 125 Z" fill="#a88c94"/>
+              <!-- Legs -->
+              <path d="M72 255 L 75 480 L 92 480 L 96 260 Z" fill="#a88c94"/>
+              <path d="M128 255 L 125 480 L 108 480 L 104 260 Z" fill="#a88c94"/>
+            </svg>
+
+            <!-- STACKED CLOTHING LAYERS (Z-INDEX ORDER IS CRITICAL) -->
+            <!-- Layer 1: Shoes -->
+            <img id="layer-shoes" class="mannequin-layer clothing-layer opacity-0 z-10" alt="Shoes Layer" />
+            <!-- Layer 2: Bottoms -->
+            <img id="layer-bottoms" class="mannequin-layer clothing-layer opacity-0 z-20" alt="Bottoms Layer" />
+            <!-- Layer 3: Tops -->
+            <img id="layer-tops" class="mannequin-layer clothing-layer opacity-0 z-30" alt="Tops Layer" />
+            <!-- Layer 4: Outerwear/Jackets -->
+            <img id="layer-outerwear" class="mannequin-layer clothing-layer opacity-0 z-40" alt="Outerwear Layer" />
+          </div>
+
+          <!-- Bottom Master Action Bar -->
+          <div class="w-full mt-4 pt-3 border-t border-white/80 flex items-center justify-between">
+            <div class="text-left">
+              <p class="text-[10px] text-[#8c7479] font-medium uppercase tracking-wider">Equipped Items</p>
+              <p class="text-xs font-semibold text-[#4a3e3d]" id="equipped-count-text">0 / 4 Selected</p>
+            </div>
+            <button onclick="wearEntireOutfit()" id="btn-wear-all" class="px-5 py-2.5 bg-[#e8a5b8] hover:bg-[#d992a6] active:bg-[#c98296] text-white rounded-2xl text-xs font-semibold shadow-md transition flex items-center space-x-2">
+              <i class="fa-solid fa-sparkles text-xs"></i>
+              <span>Wear Entire Outfit Today</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- RIGHT: Stacked 4-Category Carousels -->
+      <section class="lg:col-span-7 space-y-4">
+        
+        <!-- Loading State -->
+        <div id="loading-state" class="flex flex-col items-center justify-center py-20 text-[#8c7479]">
+          <div class="w-10 h-10 border-4 border-[#e8a5b8]/30 border-t-[#e8a5b8] rounded-full animate-spin mb-3"></div>
+          <p class="text-xs font-medium">Fetching wardrobe from Notion...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12 glass-panel rounded-3xl p-6">
+          <i class="fa-solid fa-shirt-long text-3xl text-[#7a4e5a]/40 mb-3"></i>
+          <h2 class="font-semibold text-sm text-[#4a3e3d]">No Closet Items Found</h2>
+          <p class="text-xs text-[#8c7479] mt-1 mb-4">Your Notion wardrobe database appears to be empty.</p>
+          <button onclick="enableDemoMode()" class="px-4 py-2 bg-[#e8a5b8] hover:bg-[#d992a6] text-white rounded-xl text-xs font-semibold shadow-md transition">Load Sample Fitting Items</button>
+        </div>
+
+        <!-- Category Containers Container -->
+        <div id="carousels-wrapper" class="space-y-4 hidden">
+          <!-- Dynamically populated per category -->
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Settings / Setup Modal -->
+  <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm hidden">
+    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 shadow-2xl relative bg-white/95">
+      <button onclick="closeSettings()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-[#f4cad6] flex items-center justify-center text-[#7a4e5a]">
+          <i class="fa-solid fa-sliders"></i>
+        </div>
+        <div>
+          <h2 class="font-semibold text-base text-[#4a3e3d]">Notion Database Configuration</h2>
+          <p class="text-[11px] text-[#8c7479]">Connect your paper-doll wardrobe database</p>
+        </div>
+      </div>
+
+      <div class="space-y-3.5 my-5">
+        <div>
+          <label class="block text-xs font-semibold text-[#6e585d] mb-1">Notion Integration Secret (Token)</label>
+          <input type="password" id="input-api-key" placeholder="secret_..." class="w-full px-3.5 py-2 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-[#e8a5b8] text-xs bg-white/80" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-[#6e585d] mb-1">Wardrobe Database ID</label>
+          <input type="text" id="input-db-id" placeholder="32-character database string" class="w-full px-3.5 py-2 rounded-xl border border-pink-200 focus:outline-none focus:ring-2 focus:ring-[#e8a5b8] text-xs bg-white/80" />
+        </div>
+
+        <div class="p-3 bg-pink-50/80 border border-pink-100 rounded-xl text-[11px] text-[#7a5e65] space-y-1">
+          <p class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-image text-pink-400"></i> PNG Mannequin Formatting Tip:</p>
+          <p class="opacity-90 leading-normal">For best paper-doll alignment, upload <b>upright transparent PNGs</b> into your Notion <code class="bg-white px-1 rounded">Photo</code> column. Non-PNG images will still render nicely as cards!</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+        <button onclick="clearCredentials()" class="px-3 py-1.5 text-xs font-medium text-rose-500 hover:text-rose-700">Clear Keys</button>
+        <div class="flex space-x-2">
+          <button onclick="closeSettings()" class="px-3.5 py-2 text-xs font-medium text-gray-500 hover:text-gray-700">Cancel</button>
+          <button onclick="saveSettings()" class="px-4 py-2 bg-[#e8a5b8] hover:bg-[#d992a6] text-white rounded-xl text-xs font-semibold shadow-md transition">Save & Connect</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // CONFIGURATION: Replace with your actual credentials
-    const NOTION_API_KEY = "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";
-    const DATABASE_ID = "40eaedaf73e8806dbddfdef92af3548e";
+    // App State
+    let isDemoMode = false;
+    let notionApiKey = localStorage.getItem('wardrobe_notion_key') || '';
+    let notionDbId = localStorage.getItem('wardrobe_db_id') || '';
 
-    async function fetchWardrobe() {
-      const loadingEl = document.getElementById("loading");
-      const targetUrl = `https://api.notion.com/v1/databases/${DATABASE_ID}/query`;
+    // Track Equipped Items on the Avatar Layer Stage
+    const equippedOutfit = {
+      Tops: null,
+      Bottoms: null,
+      Outerwear: null,
+      Shoes: null
+    };
+
+    // Category Alignment Key Mapping
+    const CATEGORIES = ['Tops', 'Bottoms', 'Outerwear', 'Shoes'];
+
+    // High quality upright transparent PNG demo items
+    const DEMO_ITEMS = [
+      // TOPS
+      {
+        id: 'top-1',
+        name: 'Cropped Cashmere Knit',
+        category: 'Tops',
+        photo: 'https://png.pngtree.com/png-clipart/20230405/ourmid/pngtree-pink-t-shirt-png-image_6682855.png',
+        wears: 1,
+        lastWashed: getPastDate(2)
+      },
+      {
+        id: 'top-2',
+        name: 'White Button Shirt',
+        category: 'Tops',
+        photo: 'https://png.pngtree.com/png-clipart/20230113/ourmid/pngtree-white-t-shirt-mockup-front-view-png-image_6561570.png',
+        wears: 3,
+        lastWashed: getPastDate(8)
+      },
+      // BOTTOMS
+      {
+        id: 'bot-1',
+        name: 'High-Waist Tailored Trousers',
+        category: 'Bottoms',
+        photo: 'https://png.pngtree.com/png-clipart/20230419/ourmid/pngtree-women-pants-isolated-on-white-background-png-image_6713919.png',
+        wears: 0,
+        lastWashed: getPastDate(1)
+      },
+      {
+        id: 'bot-2',
+        name: 'Denim Midi Skirt',
+        category: 'Bottoms',
+        photo: 'https://png.pngtree.com/png-clipart/20230419/ourmid/pngtree-blue-denim-skirt-png-image_6713928.png',
+        wears: 4,
+        lastWashed: getPastDate(14)
+      },
+      // OUTERWEAR
+      {
+        id: 'out-1',
+        name: 'Oversized Trench Coat',
+        category: 'Outerwear',
+        photo: 'https://png.pngtree.com/png-clipart/20230419/ourmid/pngtree-brown-trench-coat-isolated-on-white-background-png-image_6713922.png',
+        wears: 2,
+        lastWashed: getPastDate(10)
+      },
+      {
+        id: 'out-2',
+        name: 'Blush Wool Blazer',
+        category: 'Outerwear',
+        photo: 'https://png.pngtree.com/png-clipart/20230419/ourmid/pngtree-pink-blazer-png-image_6713925.png',
+        wears: 1,
+        lastWashed: getPastDate(4)
+      },
+      // SHOES
+      {
+        id: 'shoe-1',
+        name: 'White Chunky Sneakers',
+        category: 'Shoes',
+        photo: 'https://png.pngtree.com/png-clipart/20230511/ourmid/pngtree-white-sneakers-isolated-on-background-png-image_7092892.png',
+        wears: 2,
+        lastWashed: getPastDate(3)
+      },
+      {
+        id: 'shoe-2',
+        name: 'Leather Loafers',
+        category: 'Shoes',
+        photo: 'https://png.pngtree.com/png-clipart/20230419/ourmid/pngtree-black-women-shoes-png-image_6713930.png',
+        wears: 5,
+        lastWashed: getPastDate(18)
+      }
+    ];
+
+    function getPastDate(daysAgo) {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      return d.toISOString().split('T')[0];
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!notionApiKey || !notionDbId) {
+        enableDemoMode();
+      } else {
+        loadWardrobe();
+      }
+    });
+
+    function toggleDemoMode(checked) {
+      isDemoMode = checked;
+      if (isDemoMode) {
+        hideDiagnostic();
+        document.getElementById('status-subtitle').innerText = 'Demo Paper-Doll Fitting Room';
+        renderCarousels(DEMO_ITEMS);
+      } else {
+        loadWardrobe();
+      }
+    }
+
+    function enableDemoMode() {
+      document.getElementById('demo-toggle').checked = true;
+      toggleDemoMode(true);
+    }
+
+    async function loadWardrobe() {
+      if (isDemoMode) {
+        renderCarousels(DEMO_ITEMS);
+        return;
+      }
+
+      const loadingEl = document.getElementById('loading-state');
+      const emptyEl = document.getElementById('empty-state');
+      const carouselsWrapper = document.getElementById('carousels-wrapper');
+      
+      loadingEl.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+      carouselsWrapper.classList.add('hidden');
+      hideDiagnostic();
+
+      document.getElementById('status-subtitle').innerText = 'Syncing with Notion...';
+
+      if (!notionApiKey || !notionDbId) {
+        showDiagnostic("Missing Notion Setup", "Please enter your Notion Integration Token and Database ID in settings.");
+        loadingEl.classList.add('hidden');
+        return;
+      }
+
+      const targetUrl = `https://api.notion.com/v1/databases/${notionDbId}/query`;
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
       try {
         const response = await fetch(proxyUrl, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${NOTION_API_KEY}`,
+            "Authorization": `Bearer ${notionApiKey}`,
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json"
           }
         });
 
         if (!response.ok) {
-          const errBody = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errBody}`);
+          const errText = await response.text();
+          if (response.status === 401) {
+            throw new Error("401 Unauthorized: Invalid Integration Token secret.");
+          } else if (response.status === 404) {
+            throw new Error("404 Not Found: Database ID is incorrect or integration was not shared with the database.");
+          } else {
+            throw new Error(`HTTP ${response.status}: ${errText}`);
+          }
         }
 
         const data = await response.json();
-        loadingEl.style.display = "none";
-        renderWardrobe(data.results);
+        const items = parseNotionResponse(data.results);
+
+        loadingEl.classList.add('hidden');
+        document.getElementById('status-subtitle').innerText = 'Connected to Notion';
+
+        if (items.length === 0) {
+          emptyEl.classList.remove('hidden');
+        } else {
+          carouselsWrapper.classList.remove('hidden');
+          renderCarousels(items);
+        }
+
       } catch (err) {
-        loadingEl.innerText = `Error loading closet: ${err.message}`;
-        console.error(err);
+        loadingEl.classList.add('hidden');
+        showDiagnostic("Notion Connection Failed", err.message);
+        document.getElementById('status-subtitle').innerText = 'Connection Alert';
+      }
+    }
+
+    function parseNotionResponse(results) {
+      return results.map(item => {
+        const props = item.properties;
+        const name = props.Name?.title[0]?.plain_text || props.Item?.title[0]?.plain_text || 'Untitled Item';
+        let category = props.Category?.select?.name || 'Tops';
+
+        // Normalize Category names to match standard slots
+        if (category.toLowerCase().includes('top')) category = 'Tops';
+        else if (category.toLowerCase().includes('bot') || category.toLowerCase().includes('pant') || category.toLowerCase().includes('skirt')) category = 'Bottoms';
+        else if (category.toLowerCase().includes('coat') || category.toLowerCase().includes('jacket') || category.toLowerCase().includes('outer')) category = 'Outerwear';
+        else if (category.toLowerCase().includes('shoe') || category.toLowerCase().includes('boot')) category = 'Shoes';
+
+        const photo = props.Photo?.files[0]?.file?.url || props.Photo?.files[0]?.external?.url || '';
+        const wears = props['Wears Since Wash']?.number || 0;
+        const lastWashed = props['Last Washed']?.date?.start || null;
+
+        return { id: item.id, name, category, photo, wears, lastWashed };
+      });
+    }
+
+    function renderCarousels(items) {
+      const wrapper = document.getElementById('carousels-wrapper');
+      wrapper.classList.remove('hidden');
+      wrapper.innerHTML = '';
+
+      // Group items by normalized category
+      const grouped = { Tops: [], Bottoms: [], Outerwear: [], Shoes: [] };
+      items.forEach(item => {
+        const cat = grouped[item.category] ? item.category : 'Tops';
+        grouped[cat].push(item);
+      });
+
+      // Generate 4 synchronized category carousel panels
+      CATEGORIES.forEach(catName => {
+        const catItems = grouped[catName] || [];
+        const panel = document.createElement('div');
+        panel.className = 'glass-panel rounded-2xl p-3.5 space-y-2';
+
+        panel.innerHTML = `
+          <div class="flex items-center justify-between px-1">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-semibold text-[#4a3e3d]">${catName}</span>
+              <span class="text-[10px] bg-white/80 text-[#8c7479] px-2 py-0.5 rounded-full font-medium">${catItems.length}</span>
+            </div>
+            ${equippedOutfit[catName] ? `
+              <button onclick="unequipSlot('${catName}')" class="text-[10px] font-medium text-rose-500 hover:text-rose-700">
+                Unequip ${catName}
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="carousel-container">
+            ${catItems.length > 0 ? catItems.map(item => renderItemCardHtml(item)).join('') : `
+              <div class="text-[11px] text-gray-400 py-3 px-2">No ${catName} found in database.</div>
+            `}
+          </div>
+        `;
+
+        wrapper.appendChild(panel);
+      });
+
+      updateAvatarDisplay();
+    }
+
+    function renderItemCardHtml(item) {
+      const isEquipped = equippedOutfit[item.category]?.id === item.id;
+      const daysAgo = calculateDays(item.lastWashed);
+
+      let statusDot = 'bg-emerald-400';
+      if (item.wears >= 3 || daysAgo > 7) statusDot = 'bg-amber-400';
+      if (item.wears >= 5 || daysAgo > 14) statusDot = 'bg-rose-500';
+
+      return `
+        <div onclick='equipItem(${JSON.stringify(item).replace(/'/g, "&#39;")})' 
+             class="clothing-card glass-panel rounded-2xl p-2.5 flex flex-col justify-between border ${isEquipped ? 'active-equipped' : 'border-white/90'}">
+          <div>
+            <div class="relative w-full h-24 rounded-xl mb-2 bg-white/60 flex items-center justify-center overflow-hidden">
+              <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${statusDot}"></span>
+              ${item.photo ? `
+                <img src="${item.photo}" alt="${item.name}" class="w-full h-full object-contain p-1" onerror="this.onerror=null; this.src='https://placehold.co/100x100/f8ecee/7a4e5a?text=Item';" />
+              ` : `
+                <i class="fa-solid fa-shirt text-pink-200 text-2xl"></i>
+              `}
+            </div>
+            <h4 class="font-semibold text-[11px] text-[#4a3e3d] truncate mb-0.5" title="${item.name}">${item.name}</h4>
+            <p class="text-[9px] text-[#8c7479]">${item.wears} ${item.wears === 1 ? 'wear' : 'wears'}</p>
+          </div>
+          <div class="mt-2 text-center">
+            <span class="inline-block text-[9px] font-semibold px-2 py-0.5 rounded-full ${isEquipped ? 'bg-[#e8a5b8] text-white' : 'bg-white/80 text-[#7a4e5a]'}">
+              ${isEquipped ? 'Equipped' : 'Try On'}
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    function equipItem(item) {
+      // Toggle off if clicking the same item
+      if (equippedOutfit[item.category]?.id === item.id) {
+        equippedOutfit[item.category] = null;
+      } else {
+        equippedOutfit[item.category] = item;
+      }
+
+      // Re-render carousels to reflect active equipped border styling
+      if (isDemoMode) {
+        renderCarousels(DEMO_ITEMS);
+      } else {
+        loadWardrobe();
+      }
+    }
+
+    function unequipSlot(categoryName) {
+      equippedOutfit[categoryName] = null;
+      if (isDemoMode) {
+        renderCarousels(DEMO_ITEMS);
+      } else {
+        loadWardrobe();
+      }
+    }
+
+    function resetOutfit() {
+      CATEGORIES.forEach(cat => equippedOutfit[cat] = null);
+      if (isDemoMode) {
+        renderCarousels(DEMO_ITEMS);
+      } else {
+        loadWardrobe();
+      }
+    }
+
+    function updateAvatarDisplay() {
+      // Map Layers
+      const layerMap = {
+        Tops: document.getElementById('layer-tops'),
+        Bottoms: document.getElementById('layer-bottoms'),
+        Outerwear: document.getElementById('layer-outerwear'),
+        Shoes: document.getElementById('layer-shoes')
+      };
+
+      let activeCount = 0;
+
+      CATEGORIES.forEach(cat => {
+        const item = equippedOutfit[cat];
+        const layerImg = layerMap[cat];
+
+        if (item && item.photo) {
+          layerImg.src = item.photo;
+          layerImg.style.opacity = '1';
+          layerImg.style.transform = 'scale(1)';
+          activeCount++;
+        } else {
+          layerImg.style.opacity = '0';
+          layerImg.style.transform = 'scale(0.95)';
+        }
+      });
+
+      document.getElementById('equipped-count-text').innerText = `${activeCount} / 4 Selected`;
+    }
+
+    async function wearEntireOutfit() {
+      const activeItems = Object.values(equippedOutfit).filter(Boolean);
+
+      if (activeItems.length === 0) {
+        alert("Please select at least one item on the avatar to wear!");
+        return;
+      }
+
+      const btn = document.getElementById('btn-wear-all');
+      btn.disabled = true;
+      btn.innerText = "Logging Outfit...";
+
+      if (isDemoMode) {
+        activeItems.forEach(item => {
+          const match = DEMO_ITEMS.find(d => d.id === item.id);
+          if (match) match.wears += 1;
+        });
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-sparkles text-xs"></i><span>Wear Entire Outfit Today</span>`;
+          renderCarousels(DEMO_ITEMS);
+          alert("Outfit wear counts updated in Demo state!");
+        }, 400);
+        return;
+      }
+
+      const todayString = new Date().toISOString().split('T')[0];
+
+      try {
+        // Send PATCH requests for all currently equipped items simultaneously
+        const promises = activeItems.map(item => {
+          const targetUrl = `https://api.notion.com/v1/pages/${item.id}`;
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+          return fetch(proxyUrl, {
+            method: "PATCH",
+            headers: {
+              "Authorization": `Bearer ${notionApiKey}`,
+              "Notion-Version": "2022-06-28",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              properties: {
+                "Wears Since Wash": { number: (item.wears || 0) + 1 },
+                "Last Wore": { date: { start: todayString } }
+              }
+            })
+          });
+        });
+
+        await Promise.all(promises);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-sparkles text-xs"></i><span>Wear Entire Outfit Today</span>`;
+        await loadWardrobe();
+        alert(`Successfully logged today's outfit (${activeItems.length} items) in Notion!`);
+      } catch (err) {
+        alert(`Failed to update some items: ${err.message}`);
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-sparkles text-xs"></i><span>Wear Entire Outfit Today</span>`;
       }
     }
 
@@ -202,4 +743,50 @@
       return Math.floor(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    async function markWoreToday(pageId, currentWears, btnElement) {
+    // Modal & Settings Handlers
+    function openSettings() {
+      document.getElementById('input-api-key').value = notionApiKey;
+      document.getElementById('input-db-id').value = notionDbId;
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      notionApiKey = document.getElementById('input-api-key').value.trim();
+      notionDbId = document.getElementById('input-db-id').value.trim();
+
+      localStorage.setItem('wardrobe_notion_key', notionApiKey);
+      localStorage.setItem('wardrobe_db_id', notionDbId);
+
+      closeSettings();
+      document.getElementById('demo-toggle').checked = false;
+      isDemoMode = false;
+      loadWardrobe();
+    }
+
+    function clearCredentials() {
+      localStorage.removeItem('wardrobe_notion_key');
+      localStorage.removeItem('wardrobe_db_id');
+      notionApiKey = '';
+      notionDbId = '';
+      document.getElementById('input-api-key').value = '';
+      document.getElementById('input-db-id').value = '';
+      closeSettings();
+      enableDemoMode();
+    }
+
+    function showDiagnostic(title, message) {
+      document.getElementById('diag-title').innerText = title;
+      document.getElementById('diag-msg').innerText = message;
+      document.getElementById('diagnostic-banner').classList.remove('hidden');
+    }
+
+    function hideDiagnostic() {
+      document.getElementById('diagnostic-banner').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
