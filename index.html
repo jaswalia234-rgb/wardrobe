@@ -732,7 +732,7 @@ async function saveOutfit() {
     .filter(item => item !== null && item.id)
     .map(item => ({ id: item.id }));
 
-  // 2. Map selected item image files for Files & media property
+  // 2. Format image file objects (distinguishing Notion-hosted S3 vs External URLs)
   const fileObjects = Object.values(selectedOutfit)
     .filter(item => item !== null && item.url)
     .map(item => {
@@ -740,21 +740,31 @@ async function saveOutfit() {
       if (rawUrl.includes("url=")) {
         rawUrl = decodeURIComponent(rawUrl.split("url=")[1]);
       }
-      return {
-        name: item.name,
-        type: "external",
-        external: { url: rawUrl }
-      };
+
+      // If it's hosted by Notion / S3, send as type 'file'
+      const isNotionHosted = rawUrl.includes("notion.so") || rawUrl.includes("amazonaws.com") || rawUrl.includes("prod-files-secure");
+
+      if (isNotionHosted) {
+        return {
+          name: item.name,
+          type: "file",
+          file: { url: rawUrl }
+        };
+      } else {
+        return {
+          name: item.name,
+          type: "external",
+          external: { url: rawUrl }
+        };
+      }
     });
 
   const todayISO = new Date().toISOString().split('T')[0];
 
-  // Build payload matching your exact database schema
   const payload = {
     parent: { database_id: OUTFIT_LOG_DB_ID },
     properties: {
-      // Primary Title property (fallback to Name if Title fails)
-      "title": {
+      "Name": {
         title: [
           { text: { content: `outfit - ${new Date().toLocaleDateString('en-GB')}` } }
         ]
@@ -762,11 +772,9 @@ async function saveOutfit() {
       "date": {
         date: { start: todayISO }
       },
-      // Relation property linking to Wardrobe DB pages
       "outfit items": {
         relation: relationIds
       },
-      // Files & media property
       "outfit image": {
         files: fileObjects
       }
@@ -805,10 +813,10 @@ async function saveOutfit() {
     } else {
       console.error("notion error details:", resData);
       
-      // Fallback if title column in Notion is named 'Name' instead of 'title'
-      if (resData.message && resData.message.includes("title is not a property")) {
-        payload.properties["Name"] = payload.properties["title"];
-        delete payload.properties["title"];
+      // Retry with title property lowercase if Name title key fails
+      if (resData.message && resData.message.includes("Name is not a property")) {
+        payload.properties["title"] = payload.properties["Name"];
+        delete payload.properties["Name"];
         
         const retryRes = await fetch(proxiedUrl, {
           method: "POST",
