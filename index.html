@@ -706,79 +706,98 @@
     }
 
     async function fetchFromNotion() {
-      const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
-      const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
-
-      try {
-        const response = await fetch(proxiedUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${NOTION_TOKEN}`,
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            filter: { property: "status", select: { equals: "clean" } },
-            page_size: 100
-          })
-        });
-
-        const data = await response.json();
-        if (!data.results) return;
-
-        wardrobeItems = data.results.map(page => {
-          const props = page.properties;
-
-          const titleObj = props.name || props.Name || props.Title;
-          const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
-
-          let cat = props.category?.select?.name?.toLowerCase() || "top";
-          if (cat === "bottoms") cat = "bottom";
-          if (cat === "dress") cat = "dresses";
-
-          const colourProp = props.colour || props.Colour || props.color || props.Color;
-          const colors = [];
-          if (colourProp?.multi_select) {
-            colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
-          } else if (colourProp?.select?.name) {
-            colors.push(colourProp.select.name.toLowerCase());
-          } else if (colourProp?.rich_text?.[0]?.plain_text) {
-            colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
-          }
-
-          const tagsProp = props.tags || props.Tags;
-          const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
-
-          let rawImgUrl = "";
-          const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
-          if (imgProp?.files?.[0]) {
-            rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
-          } else if (imgProp?.url) {
-            rawImgUrl = imgProp.url;
-          }
-
-          const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
-
-          return {
-            id: page.id,
-            name: itemName,
-            category: cat,
-            colors: colors,
-            tags: tags,
-            url: proxiedImgUrl
-          };
-        });
-
-        populateColourDropdown();
-        buildDynamicTagChips();
-        renderCarousels(wardrobeItems);
-        drawOutfitCanvas();
-        preloadInitialImages();
-
-      } catch (err) {
-        console.error("error fetching notion wardrobe:", err);
-      }
+  // 1. Instant load from local cache if available
+  const cachedData = localStorage.getItem('cached_wardrobe_items');
+  if (cachedData) {
+    try {
+      wardrobeItems = JSON.parse(cachedData);
+      populateColourDropdown();
+      buildDynamicTagChips();
+      renderCarousels(wardrobeItems);
+      drawOutfitCanvas();
+      preloadInitialImages();
+    } catch (e) {
+      console.error("Cache read error", e);
     }
+  }
+
+  // 2. Fetch fresh data from Notion in the background
+  const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
+  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
+
+  try {
+    const response = await fetch(proxiedUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${NOTION_TOKEN}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        filter: { property: "status", select: { equals: "clean" } },
+        page_size: 100
+      })
+    });
+
+    const data = await response.json();
+    if (!data.results) return;
+
+    wardrobeItems = data.results.map(page => {
+      const props = page.properties;
+
+      const titleObj = props.name || props.Name || props.Title;
+      const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
+
+      let cat = props.category?.select?.name?.toLowerCase() || "top";
+      if (cat === "bottoms") cat = "bottom";
+      if (cat === "dress") cat = "dresses";
+
+      const colourProp = props.colour || props.Colour || props.color || props.Color;
+      const colors = [];
+      if (colourProp?.multi_select) {
+        colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
+      } else if (colourProp?.select?.name) {
+        colors.push(colourProp.select.name.toLowerCase());
+      } else if (colourProp?.rich_text?.[0]?.plain_text) {
+        colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
+      }
+
+      const tagsProp = props.tags || props.Tags;
+      const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
+
+      let rawImgUrl = "";
+      const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
+      if (imgProp?.files?.[0]) {
+        rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
+      } else if (imgProp?.url) {
+        rawImgUrl = imgProp.url;
+      }
+
+      const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
+
+      return {
+        id: page.id,
+        name: itemName,
+        category: cat,
+        colors: colors,
+        tags: tags,
+        url: proxiedImgUrl
+      };
+    });
+
+    // Save updated items to LocalStorage for next time
+    localStorage.setItem('cached_wardrobe_items', JSON.stringify(wardrobeItems));
+
+    // Update UI silently
+    populateColourDropdown();
+    buildDynamicTagChips();
+    renderCarousels(wardrobeItems);
+    drawOutfitCanvas();
+
+  } catch (err) {
+    console.error("error fetching notion wardrobe:", err);
+  }
+}
 
     function preloadInitialImages() {
       const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
