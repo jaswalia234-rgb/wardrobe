@@ -43,7 +43,7 @@
 
     .container {
       width: 100%;
-      max-width: 1000px;
+      max-width: 1050px;
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -78,13 +78,14 @@
       color: #ffffff;
     }
 
+    /* Top Search and Structured Global Filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
-      padding: 14px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -95,10 +96,12 @@
       display: flex;
       gap: 10px;
       width: 100%;
+      flex-wrap: wrap;
     }
 
     .search-input {
-      flex: 1;
+      flex: 2;
+      min-width: 180px;
       padding: 10px 14px;
       border: 1px solid rgba(244, 194, 194, 0.5);
       border-radius: var(--radius-md);
@@ -110,21 +113,31 @@
 
     .search-input::placeholder { color: var(--subtext); }
 
-    .colour-select {
-      padding: 10px 14px;
+    .dropdown-select {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 12px;
       border: 1px solid rgba(244, 194, 194, 0.5);
       border-radius: var(--radius-md);
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       background: rgba(255, 255, 255, 0.9);
       color: var(--text-color);
       outline: none;
       cursor: pointer;
     }
 
+    .filter-group-title {
+      font-size: 0.75rem;
+      color: var(--subtext);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
     .tag-filters {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .filter-chip {
@@ -282,19 +295,33 @@
       border: 1px solid rgba(255, 255, 255, 0.8);
       border-radius: var(--radius-lg);
       padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     .category-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
     }
 
     .category-title {
       font-size: 0.9rem;
       font-weight: 500;
       color: var(--subtext);
+    }
+
+    .category-filters-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .category-filters-row select {
+      padding: 6px 10px;
+      font-size: 0.78rem;
     }
 
     .btn-clear-cat {
@@ -376,20 +403,47 @@
       <button class="btn-clear-all" onclick="clearAllOutfit()">clear outfit</button>
     </div>
 
-    <!-- search & filter bar -->
+    <!-- Structured Global Filter Bar -->
     <div class="filter-bar">
       <div class="search-row">
         <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="applyFilters()" />
-        <select class="colour-select" id="colour-select" onchange="applyFilters()">
+        
+        <select class="dropdown-select" id="colour-select" onchange="applyFilters()">
           <option value="">all colours</option>
         </select>
+
+        <select class="dropdown-select" id="brand-select" onchange="applyFilters()">
+          <option value="">all brands</option>
+          <option value="shein">shein</option>
+          <option value="primark">primark</option>
+          <option value="plt">plt</option>
+          <option value="hollister">hollister</option>
+          <option value="victoria secret">victoria secret</option>
+          <option value="other">other</option>
+        </select>
+
+        <select class="dropdown-select" id="fit-select" onchange="applyFilters()">
+          <option value="">all fits</option>
+          <option value="tight">tight</option>
+          <option value="baggy">baggy</option>
+        </select>
       </div>
-      <div class="tag-filters" id="tag-chips"></div>
+
+      <div class="filter-group-title">global tags</div>
+      <div class="tag-filters">
+        <div class="filter-chip" onclick="toggleTagFilter('comfy', this)">comfy</div>
+        <div class="filter-chip" onclick="toggleTagFilter('winter', this)">winter</div>
+        <div class="filter-chip" onclick="toggleTagFilter('loungewear', this)">loungewear</div>
+        <div class="filter-chip" onclick="toggleTagFilter('club', this)">club</div>
+        <div class="filter-chip" onclick="toggleTagFilter('new', this)">new</div>
+        <div class="filter-chip" onclick="toggleTagFilter('matching set', this)">matching set</div>
+        <div id="dynamic-tag-chips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+      </div>
     </div>
 
     <div class="dashboard-grid">
       
-      <!-- preview canvas -->
+      <!-- Preview Canvas -->
       <div class="preview-card">
         <div class="category-title">tomorrow's outfit</div>
         <div class="outfit-display-canvas">
@@ -416,33 +470,83 @@
         <button class="btn-sync" onclick="saveOutfit()">save outfit to notion</button>
       </div>
 
-      <!-- category carousels -->
+      <!-- Category Carousels with Category-Specific Filters -->
       <div class="carousel-section">
         
+        <!-- TOPS -->
         <div class="category-group">
           <div class="category-header">
             <span class="category-title">tops</span>
             <button class="btn-clear-cat" onclick="clearCategory('top')">clear</button>
           </div>
+          <div class="category-filters-row">
+            <select class="dropdown-select" id="top-type-select" onchange="applyFilters()">
+              <option value="">all top types</option>
+              <option value="sweater">sweater</option>
+              <option value="hoodie">hoodie</option>
+              <option value="shirt">shirt</option>
+              <option value="top">top</option>
+            </select>
+            <select class="dropdown-select" id="top-crop-select" onchange="applyFilters()">
+              <option value="">all crops</option>
+              <option value="cropped">cropped</option>
+              <option value="extra cropped">extra cropped</option>
+              <option value="not cropped">not cropped</option>
+            </select>
+            <select class="dropdown-select" id="top-sleeve-select" onchange="applyFilters()">
+              <option value="">all sleeves</option>
+              <option value="long-sleeved">long-sleeved</option>
+              <option value="short-sleeved">short-sleeved</option>
+              <option value="no sleeves">no sleeves</option>
+            </select>
+            <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
+          </div>
           <div class="carousel" id="carousel-top"></div>
         </div>
 
+        <!-- BOTTOMS -->
         <div class="category-group">
           <div class="category-header">
             <span class="category-title">bottoms</span>
             <button class="btn-clear-cat" onclick="clearCategory('bottom')">clear</button>
           </div>
+          <div class="category-filters-row">
+            <select class="dropdown-select" id="bottom-type-select" onchange="applyFilters()">
+              <option value="">all bottom types</option>
+              <option value="joggers">joggers</option>
+              <option value="jeans">jeans</option>
+              <option value="skirt">skirt</option>
+              <option value="shorts">shorts</option>
+            </select>
+          </div>
           <div class="carousel" id="carousel-bottom"></div>
         </div>
 
+        <!-- DRESSES -->
         <div class="category-group">
           <div class="category-header">
             <span class="category-title">dresses</span>
             <button class="btn-clear-cat" onclick="clearCategory('dresses')">clear</button>
           </div>
+          <div class="category-filters-row">
+            <select class="dropdown-select" id="dress-length-select" onchange="applyFilters()">
+              <option value="">all lengths</option>
+              <option value="maxi">maxi</option>
+              <option value="mini">mini</option>
+              <option value="midi">midi</option>
+            </select>
+            <select class="dropdown-select" id="dress-sleeve-select" onchange="applyFilters()">
+              <option value="">all sleeves</option>
+              <option value="long-sleeved">long-sleeved</option>
+              <option value="short-sleeved">short-sleeved</option>
+              <option value="no sleeves">no sleeves</option>
+            </select>
+            <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
+          </div>
           <div class="carousel" id="carousel-dresses"></div>
         </div>
 
+        <!-- SHOES -->
         <div class="category-group">
           <div class="category-header">
             <span class="category-title">shoes</span>
@@ -451,6 +555,7 @@
           <div class="carousel" id="carousel-shoes"></div>
         </div>
 
+        <!-- OUTERWEAR -->
         <div class="category-group">
           <div class="category-header">
             <span class="category-title">outerwear</span>
@@ -470,9 +575,7 @@
     const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
     const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
 
-    // PASTE FREE IMGBB API KEY HERE FOR INSTANT CANVAS COVER UPLOADS
-    const IMGBB_API_KEY = "d92dae555f6fde51f02ce45e91048817"; 
-
+    const IMGBB_API_KEY = "68fdfb239efee78e8b09fffe8e50bdf7"; 
     const PERSON_IMAGE_URL = "images/person.png";
 
     let wardrobeItems = [];
@@ -526,6 +629,15 @@
             colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
           }
 
+          const extractSingleVal = (prop) => prop?.select?.name?.toLowerCase() || prop?.rich_text?.[0]?.plain_text?.toLowerCase() || "";
+
+          const brand = extractSingleVal(props.brand || props.Brand);
+          const fit = extractSingleVal(props.fit || props.Fit);
+          const itemType = extractSingleVal(props.type || props.Type);
+          const crop = extractSingleVal(props.crop || props.Crop);
+          const sleeve = extractSingleVal(props["sleeve length"] || props["Sleeve Length"] || props.sleeve);
+          const length = extractSingleVal(props.length || props.Length);
+
           const tagsProp = props.tags || props.Tags;
           const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
 
@@ -545,12 +657,18 @@
             category: cat,
             colors: colors,
             tags: tags,
+            brand: brand,
+            fit: fit,
+            itemType: itemType,
+            crop: crop,
+            sleeve: sleeve,
+            length: length,
             url: proxiedImgUrl
           };
         });
 
         populateColourDropdown();
-        buildTagChips();
+        buildDynamicTagChips();
         renderCarousels(wardrobeItems);
         drawOutfitCanvas();
       } catch (err) {
@@ -569,14 +687,18 @@
         Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
-    function buildTagChips() {
-      const allTags = new Set();
+    function buildDynamicTagChips() {
+      const predefinedTags = new Set(['comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby']);
+      const dynamicTags = new Set();
+
       wardrobeItems.forEach(item => {
-        item.tags.forEach(t => allTags.add(t));
+        item.tags.forEach(t => {
+          if (!predefinedTags.has(t)) dynamicTags.add(t);
+        });
       });
 
-      const container = document.getElementById("tag-chips");
-      container.innerHTML = Array.from(allTags).map(tag => `
+      const container = document.getElementById("dynamic-tag-chips");
+      container.innerHTML = Array.from(dynamicTags).map(tag => `
         <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
       `).join('');
     }
@@ -595,13 +717,42 @@
     function applyFilters() {
       const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
       const selectedColour = document.getElementById("colour-select").value.toLowerCase();
+      const selectedBrand = document.getElementById("brand-select").value.toLowerCase();
+      const selectedFit = document.getElementById("fit-select").value.toLowerCase();
+
+      // Category specific filter selections
+      const topType = document.getElementById("top-type-select").value.toLowerCase();
+      const topCrop = document.getElementById("top-crop-select").value.toLowerCase();
+      const topSleeve = document.getElementById("top-sleeve-select").value.toLowerCase();
+
+      const bottomType = document.getElementById("bottom-type-select").value.toLowerCase();
+
+      const dressLength = document.getElementById("dress-length-select").value.toLowerCase();
+      const dressSleeve = document.getElementById("dress-sleeve-select").value.toLowerCase();
 
       const filtered = wardrobeItems.filter(item => {
         const matchesSearch = !searchQuery || item.name.includes(searchQuery);
         const matchesColour = !selectedColour || item.colors.includes(selectedColour);
+        const matchesBrand = !selectedBrand || item.brand === selectedBrand || (selectedBrand === 'other' && !['shein','primark','plt','hollister','victoria secret'].includes(item.brand));
+        const matchesFit = !selectedFit || item.fit === selectedFit;
+
+        // Tags logic (matches predefined + dynamically generated tags)
         const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
 
-        return matchesSearch && matchesColour && matchesTags;
+        // Category specific checks
+        let matchesCatFilters = true;
+        if (item.category === 'top') {
+          if (topType && item.itemType !== topType) matchesCatFilters = false;
+          if (topCrop && item.crop !== topCrop) matchesCatFilters = false;
+          if (topSleeve && item.sleeve !== topSleeve) matchesCatFilters = false;
+        } else if (item.category === 'bottom') {
+          if (bottomType && item.itemType !== bottomType) matchesCatFilters = false;
+        } else if (item.category === 'dresses') {
+          if (dressLength && item.length !== dressLength) matchesCatFilters = false;
+          if (dressSleeve && item.sleeve !== dressSleeve) matchesCatFilters = false;
+        }
+
+        return matchesSearch && matchesColour && matchesBrand && matchesFit && matchesTags && matchesCatFilters;
       });
 
       renderCarousels(filtered);
@@ -675,6 +826,7 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, rect.width, rect.height);
 
+      // Draw base mannequin
       await new Promise((resolve) => {
         const personImg = new Image();
         personImg.src = PERSON_IMAGE_URL;
@@ -697,37 +849,44 @@
             img.crossOrigin = "anonymous";
             img.src = selectedOutfit[layer].url;
             img.onload = () => {
-              let size = 110;
+              let width = 110;
+              let height = 110;
               let yPos = 45;
-              let xPos = (rect.width - size) / 2;
+              let xPos = (rect.width - width) / 2;
 
+              // Dress 1:2 height ratio adjustment (twice as long as regular tops)
               if (layer === 'dresses') {
-                size = 140;
-                yPos = 45;
-                xPos = (rect.width - size) / 2;
+                width = 120;
+                height = 210; // Scaled to 1:2 aspect ratio relative to body
+                yPos = 42;
+                xPos = (rect.width - width) / 2;
               }
               if (layer === 'top') { 
-                size = 110; 
+                width = 110; 
+                height = 110;
                 yPos = 45; 
-                xPos = (rect.width - size) / 2;
+                xPos = (rect.width - width) / 2;
               }
               if (layer === 'bottom') { 
-                size = 145; 
+                width = 145; 
+                height = 145;
                 yPos = 148; 
-                xPos = (rect.width - size) / 2;
+                xPos = (rect.width - width) / 2;
               }
               if (layer === 'shoes') { 
-                size = 80; 
+                width = 80; 
+                height = 80;
                 yPos = 245; 
-                xPos = (rect.width - size) / 2;
+                xPos = (rect.width - width) / 2;
               }
               if (layer === 'outerwear') { 
-                size = 120; 
+                width = 120; 
+                height = 120;
                 yPos = 55;
-                xPos = rect.width - size - 10;
+                xPos = rect.width - width - 10;
               }
 
-              ctx.drawImage(img, xPos, yPos, size, size);
+              ctx.drawImage(img, xPos, yPos, width, height);
               resolve();
             };
             img.onerror = () => resolve();
