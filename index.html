@@ -621,7 +621,7 @@ const NOTION_TOKEN = "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";
 const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
 const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
 
-const IMGBB_API_KEY = "d92dae555f6fde51f02ce45e91048817"; 
+const IMGBB_API_KEY = "68fdfb239efee78e8b09fffe8e50bdf7"; 
 const PERSON_IMAGE_URL = "images/person.png";
 
 let wardrobeItems = [];
@@ -678,7 +678,6 @@ async function fetchFromNotion() {
     const data = await response.json();
     if (!data.results) return;
 
-    // Parse metadata synchronously
     wardrobeItems = data.results.map(page => {
       const props = page.properties;
 
@@ -699,15 +698,7 @@ async function fetchFromNotion() {
         colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
       }
 
-      const extractSingleVal = (prop) => prop?.select?.name?.toLowerCase() || prop?.rich_text?.[0]?.plain_text?.toLowerCase() || "";
-
-      const brand = extractSingleVal(props.brand || props.Brand);
-      const fit = extractSingleVal(props.fit || props.Fit);
-      const itemType = extractSingleVal(props.type || props.Type);
-      const crop = extractSingleVal(props.crop || props.Crop);
-      const sleeve = extractSingleVal(props["sleeve length"] || props["Sleeve Length"] || props.sleeve);
-      const length = extractSingleVal(props.length || props.Length);
-
+      // Extract all tags as a unified array
       const tagsProp = props.tags || props.Tags;
       const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
 
@@ -719,7 +710,6 @@ async function fetchFromNotion() {
         rawImgUrl = imgProp.url;
       }
 
-      // Fast proxied image URL generator
       const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
 
       return {
@@ -728,23 +718,14 @@ async function fetchFromNotion() {
         category: cat,
         colors: colors,
         tags: tags,
-        brand: brand,
-        fit: fit,
-        itemType: itemType,
-        crop: crop,
-        sleeve: sleeve,
-        length: length,
         url: proxiedImgUrl
       };
     });
 
-    // 1. Render UI skeleton immediately
     populateColourDropdown();
     buildDynamicTagChips();
     renderCarousels(wardrobeItems);
     drawOutfitCanvas();
-
-    // 2. Pre-cache visible image assets in the background
     preloadInitialImages();
 
   } catch (err) {
@@ -753,7 +734,6 @@ async function fetchFromNotion() {
 }
 
 function preloadInitialImages() {
-  // Preloads the first 3 items in each category so carousels pop up instantaneously
   const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
   categories.forEach(cat => {
     const catItems = wardrobeItems.filter(i => i.category === cat).slice(0, 3);
@@ -782,6 +762,7 @@ function populateColourDropdown() {
 }
 
 function buildDynamicTagChips() {
+  // Option values managed by dropdowns and global chips
   const excludedOptionTags = new Set([
     'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby',
     'shein', 'primark', 'plt', 'hollister', 'victoria secret', 'other',
@@ -834,24 +815,39 @@ function applyFilters() {
   const dressLength = document.getElementById("dress-length-select").value.toLowerCase();
   const dressSleeve = document.getElementById("dress-sleeve-select").value.toLowerCase();
 
+  const knownBrands = ['shein', 'primark', 'plt', 'hollister', 'victoria secret'];
+
   const filtered = wardrobeItems.filter(item => {
     const matchesSearch = !searchQuery || item.name.includes(searchQuery);
     const matchesColour = !selectedColour || item.colors.includes(selectedColour);
-    const matchesBrand = !selectedBrand || item.brand === selectedBrand || (selectedBrand === 'other' && !['shein','primark','plt','hollister','victoria secret'].includes(item.brand));
-    const matchesFit = !selectedFit || item.fit === selectedFit;
 
+    // Brand matching via tags array
+    let matchesBrand = true;
+    if (selectedBrand) {
+      if (selectedBrand === 'other') {
+        matchesBrand = !item.tags.some(t => knownBrands.includes(t));
+      } else {
+        matchesBrand = item.tags.includes(selectedBrand);
+      }
+    }
+
+    // Fit matching via tags array
+    const matchesFit = !selectedFit || item.tags.includes(selectedFit);
+
+    // Global active tag chips matching
     const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
 
+    // Category-specific dropdown matching via tags array
     let matchesCatFilters = true;
     if (item.category === 'top') {
-      if (topType && item.itemType !== topType) matchesCatFilters = false;
-      if (topCrop && item.crop !== topCrop) matchesCatFilters = false;
-      if (topSleeve && item.sleeve !== topSleeve) matchesCatFilters = false;
+      if (topType && !item.tags.includes(topType)) matchesCatFilters = false;
+      if (topCrop && !item.tags.includes(topCrop)) matchesCatFilters = false;
+      if (topSleeve && !item.tags.includes(topSleeve)) matchesCatFilters = false;
     } else if (item.category === 'bottom') {
-      if (bottomType && item.itemType !== bottomType) matchesCatFilters = false;
+      if (bottomType && !item.tags.includes(bottomType)) matchesCatFilters = false;
     } else if (item.category === 'dresses') {
-      if (dressLength && item.length !== dressLength) matchesCatFilters = false;
-      if (dressSleeve && item.sleeve !== dressSleeve) matchesCatFilters = false;
+      if (dressLength && !item.tags.includes(dressLength)) matchesCatFilters = false;
+      if (dressSleeve && !item.tags.includes(dressSleeve)) matchesCatFilters = false;
     }
 
     return matchesSearch && matchesColour && matchesBrand && matchesFit && matchesTags && matchesCatFilters;
