@@ -330,6 +330,13 @@
       color: var(--text-color);
     }
 
+    .carousel-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+
     .carousel {
       display: flex;
       gap: 10px;
@@ -338,6 +345,7 @@
       padding-bottom: 4px;
       -webkit-overflow-scrolling: touch;
       width: 100%;
+      scroll-behavior: smooth;
     }
 
     .carousel::-webkit-scrollbar { height: 4px; }
@@ -345,6 +353,41 @@
       background: var(--accent);
       border-radius: 4px;
     }
+
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid var(--accent);
+      color: var(--text-color);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s ease;
+      opacity: 0;
+      pointer-events: none;
+      font-size: 0.75rem;
+    }
+
+    .carousel-arrow.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .carousel-arrow:hover {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .carousel-arrow.left { left: -6px; }
+    .carousel-arrow.right { right: -6px; }
 
     .item-card {
       flex: 0 0 95px;
@@ -393,7 +436,6 @@
       <button class="btn-clear-all" onclick="clearAllOutfit()">clear outfit</button>
     </div>
 
-    <!-- Rounded Pill-Style Search and Filters -->
     <div class="filter-bar">
       <div class="search-row">
         <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="debouncedApplyFilters()" />
@@ -486,7 +528,11 @@
             </select>
             <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
           </div>
-          <div class="carousel" id="carousel-top"></div>
+          <div class="carousel-wrapper">
+            <button class="carousel-arrow left" id="arrow-left-top" onclick="scrollCarousel('top', -200)">&#10094;</button>
+            <div class="carousel" id="carousel-top" onscroll="checkCarouselArrows('top')"></div>
+            <button class="carousel-arrow right" id="arrow-right-top" onclick="scrollCarousel('top', 200)">&#10095;</button>
+          </div>
         </div>
 
         <!-- BOTTOMS -->
@@ -504,7 +550,11 @@
               <option value="shorts">shorts</option>
             </select>
           </div>
-          <div class="carousel" id="carousel-bottom"></div>
+          <div class="carousel-wrapper">
+            <button class="carousel-arrow left" id="arrow-left-bottom" onclick="scrollCarousel('bottom', -200)">&#10094;</button>
+            <div class="carousel" id="carousel-bottom" onscroll="checkCarouselArrows('bottom')"></div>
+            <button class="carousel-arrow right" id="arrow-right-bottom" onclick="scrollCarousel('bottom', 200)">&#10095;</button>
+          </div>
         </div>
 
         <!-- DRESSES -->
@@ -528,7 +578,11 @@
             </select>
             <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
           </div>
-          <div class="carousel" id="carousel-dresses"></div>
+          <div class="carousel-wrapper">
+            <button class="carousel-arrow left" id="arrow-left-dresses" onclick="scrollCarousel('dresses', -200)">&#10094;</button>
+            <div class="carousel" id="carousel-dresses" onscroll="checkCarouselArrows('dresses')"></div>
+            <button class="carousel-arrow right" id="arrow-right-dresses" onclick="scrollCarousel('dresses', 200)">&#10095;</button>
+          </div>
         </div>
 
         <!-- SHOES -->
@@ -537,7 +591,11 @@
             <span class="category-title">shoes</span>
             <button class="btn-clear-cat" onclick="clearCategory('shoes')">clear</button>
           </div>
-          <div class="carousel" id="carousel-shoes"></div>
+          <div class="carousel-wrapper">
+            <button class="carousel-arrow left" id="arrow-left-shoes" onclick="scrollCarousel('shoes', -200)">&#10094;</button>
+            <div class="carousel" id="carousel-shoes" onscroll="checkCarouselArrows('shoes')"></div>
+            <button class="carousel-arrow right" id="arrow-right-shoes" onclick="scrollCarousel('shoes', 200)">&#10095;</button>
+          </div>
         </div>
 
         <!-- OUTERWEAR -->
@@ -546,8 +604,13 @@
             <span class="category-title">outerwear</span>
             <button class="btn-clear-cat" onclick="clearCategory('outerwear')">clear</button>
           </div>
-          <div class="carousel" id="carousel-outerwear"></div>
+          <div class="carousel-wrapper">
+            <button class="carousel-arrow left" id="arrow-left-outerwear" onclick="scrollCarousel('outerwear', -200)">&#10094;</button>
+            <div class="carousel" id="carousel-outerwear" onscroll="checkCarouselArrows('outerwear')"></div>
+            <button class="carousel-arrow right" id="arrow-right-outerwear" onclick="scrollCarousel('outerwear', 200)">&#10095;</button>
+          </div>
         </div>
+
       </div>
     </div>
   </div>
@@ -572,6 +635,45 @@
       const clean = id.replace(/-/g, "");
       if (clean.length !== 32) return id;
       return `${clean.slice(0,8)}-${clean.slice(8,12)}-${clean.slice(12,16)}-${clean.slice(16,20)}-${clean.slice(20)}`;
+    }
+
+    // Chromatic Color Sorting Mapping
+    function getColorWeight(colorName) {
+      const c = colorName.toLowerCase();
+
+      // Whites & Neutrals
+      if (c.includes('white') || c.includes('cream') || c.includes('ivory') || c.includes('nude')) return 10;
+      
+      // Pinks & Reds
+      if (c.includes('pink') || c.includes('rose') || c.includes('blush')) return 20;
+      if (c.includes('red') || c.includes('burgundy') || c.includes('maroon') || c.includes('wine')) return 30;
+      
+      // Oranges & Yellows
+      if (c.includes('orange') || c.includes('rust') || c.includes('peach')) return 40;
+      if (c.includes('yellow') || c.includes('gold') || c.includes('mustard')) return 50;
+      
+      // Greens
+      if (c.includes('sage') || c.includes('mint') || c.includes('light green')) return 60;
+      if (c.includes('green') || c.includes('khaki') || c.includes('olive') || c.includes('emerald') || c.includes('dark green')) return 70;
+      
+      // Blues (light blue -> cyan -> royal blue -> navy)
+      if (c.includes('light blue') || c.includes('sky') || c.includes('baby blue')) return 80;
+      if (c.includes('blue') || c.includes('denim') || c.includes('cobalt') || c.includes('royal')) return 85;
+      if (c.includes('navy') || c.includes('dark blue')) return 88;
+      
+      // Purples & Lilacs
+      if (c.includes('lilac') || c.includes('lavender') || c.includes('purple') || c.includes('violet') || c.includes('plum')) return 90;
+      
+      // Browns & Beiges
+      if (c.includes('beige') || c.includes('tan') || c.includes('camel') || c.includes('brown') || c.includes('chocolate')) return 100;
+      
+      // Greys, Charcoal & Blacks
+      if (c.includes('light grey') || c.includes('silver')) return 110;
+      if (c.includes('grey') || c.includes('gray') || c.includes('charcoal')) return 115;
+      if (c.includes('black')) return 120;
+
+      // Unrecognized/Other colors at end
+      return 200;
     }
 
     async function fetchFromNotion() {
@@ -667,12 +769,19 @@
         item.colors.forEach(c => allColours.add(c));
       });
 
+      // Sort colors chromatically using custom spectrum weights
+      const sortedColours = Array.from(allColours).sort((a, b) => {
+        const weightA = getColorWeight(a);
+        const weightB = getColorWeight(b);
+        if (weightA === weightB) return a.localeCompare(b);
+        return weightA - weightB;
+      });
+
       const select = document.getElementById("colour-select");
       select.innerHTML = '<option value="">all colours</option>' + 
-        Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
+        sortedColours.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
-    // Exclude category choices from showing up as duplicate general tags
     function buildDynamicTagChips() {
       const excludedOptionTags = new Set([
         'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby',
@@ -763,17 +872,46 @@
 
         if (catItems.length === 0) {
           container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
-          return;
+        } else {
+          container.innerHTML = catItems.map(item => `
+            <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
+                 onclick="selectItem('${cat}', '${item.id}', this)">
+              <img src="${item.url}" alt="${item.name}" loading="lazy" crossorigin="anonymous" />
+              <span>${item.name}</span>
+            </div>
+          `).join('');
         }
 
-        container.innerHTML = catItems.map(item => `
-          <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
-               onclick="selectItem('${cat}', '${item.id}', this)">
-            <img src="${item.url}" alt="${item.name}" loading="lazy" crossorigin="anonymous" />
-            <span>${item.name}</span>
-          </div>
-        `).join('');
+        setTimeout(() => checkCarouselArrows(cat), 50);
       });
+    }
+
+    function scrollCarousel(cat, offset) {
+      const container = document.getElementById(`carousel-${cat}`);
+      if (!container) return;
+      container.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+
+    function checkCarouselArrows(cat) {
+      const container = document.getElementById(`carousel-${cat}`);
+      const leftArrow = document.getElementById(`arrow-left-${cat}`);
+      const rightArrow = document.getElementById(`arrow-right-${cat}`);
+      if (!container || !leftArrow || !rightArrow) return;
+
+      const scrollLeft = container.scrollLeft;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+
+      if (scrollLeft > 5) {
+        leftArrow.classList.add("visible");
+      } else {
+        leftArrow.classList.remove("visible");
+      }
+
+      if (scrollLeft < maxScroll - 5 && maxScroll > 0) {
+        rightArrow.classList.add("visible");
+      } else {
+        rightArrow.classList.remove("visible");
+      }
     }
 
     function selectItem(category, itemId, element) {
@@ -805,7 +943,6 @@
       drawOutfitCanvas();
     }
 
-    // Parallelized Image Loader for Fast Drawing
     function loadImage(url) {
       if (imageCache[url]) return Promise.resolve(imageCache[url]);
       return new Promise((resolve) => {
@@ -835,7 +972,6 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      // Load mannequin in parallel
       const personImg = await loadImage(PERSON_IMAGE_URL);
       if (personImg) {
         const personHeight = 310;
@@ -847,7 +983,6 @@
       const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
       const activeLayers = layers.filter(layer => selectedOutfit[layer] && selectedOutfit[layer].url);
 
-      // Fetch all layer images concurrently
       const loadedLayerImages = await Promise.all(
         activeLayers.map(layer => loadImage(selectedOutfit[layer].url).then(img => ({ layer, img })))
       );
@@ -862,7 +997,7 @@
 
         if (layer === 'dresses') {
           width = 120;
-          height = 210; // Dress 1:2 aspect ratio scaling
+          height = 210;
           yPos = 42;
           xPos = (rect.width - width) / 2;
         } else if (layer === 'top') { 
