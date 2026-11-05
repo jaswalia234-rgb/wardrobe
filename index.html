@@ -78,7 +78,6 @@
       color: #ffffff;
     }
 
-    /* Top Search and Structured Global Filters */
     .filter-bar {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
@@ -104,8 +103,8 @@
       min-width: 180px;
       padding: 10px 14px;
       border: 1px solid rgba(244, 194, 194, 0.5);
-      border-radius: var(--radius-md);
-      font-size: 0.9rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
       background: rgba(255, 255, 255, 0.9);
       color: var(--text-color);
       outline: none;
@@ -116,21 +115,17 @@
     .dropdown-select {
       flex: 1;
       min-width: 120px;
-      padding: 10px 12px;
+      padding: 8px 14px;
       border: 1px solid rgba(244, 194, 194, 0.5);
-      border-radius: var(--radius-md);
-      font-size: 0.82rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
       background: rgba(255, 255, 255, 0.9);
       color: var(--text-color);
       outline: none;
       cursor: pointer;
-    }
-
-    .filter-group-title {
-      font-size: 0.75rem;
-      color: var(--subtext);
-      font-weight: 600;
-      margin-top: 4px;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
     }
 
     .tag-filters {
@@ -141,7 +136,7 @@
     }
 
     .filter-chip {
-      padding: 5px 12px;
+      padding: 6px 14px;
       background: #ffffff;
       border: 1px solid rgba(244, 194, 194, 0.4);
       border-radius: 20px;
@@ -149,6 +144,7 @@
       color: var(--text-color);
       cursor: pointer;
       transition: all 0.2s ease;
+      user-select: none;
     }
 
     .filter-chip.active {
@@ -319,11 +315,6 @@
       align-items: center;
     }
 
-    .category-filters-row select {
-      padding: 6px 10px;
-      font-size: 0.78rem;
-    }
-
     .btn-clear-cat {
       background: none;
       border: none;
@@ -397,16 +388,15 @@
 <body>
 
   <div class="container">
-    
     <div class="header-row">
       <h1>wardrobe</h1>
       <button class="btn-clear-all" onclick="clearAllOutfit()">clear outfit</button>
     </div>
 
-    <!-- Structured Global Filter Bar -->
+    <!-- Rounded Pill-Style Search and Filters -->
     <div class="filter-bar">
       <div class="search-row">
-        <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="applyFilters()" />
+        <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="debouncedApplyFilters()" />
         
         <select class="dropdown-select" id="colour-select" onchange="applyFilters()">
           <option value="">all colours</option>
@@ -429,7 +419,6 @@
         </select>
       </div>
 
-      <div class="filter-group-title">global tags</div>
       <div class="tag-filters">
         <div class="filter-chip" onclick="toggleTagFilter('comfy', this)">comfy</div>
         <div class="filter-chip" onclick="toggleTagFilter('winter', this)">winter</div>
@@ -442,8 +431,6 @@
     </div>
 
     <div class="dashboard-grid">
-      
-      <!-- Preview Canvas -->
       <div class="preview-card">
         <div class="category-title">tomorrow's outfit</div>
         <div class="outfit-display-canvas">
@@ -470,9 +457,7 @@
         <button class="btn-sync" onclick="saveOutfit()">save outfit to notion</button>
       </div>
 
-      <!-- Category Carousels with Category-Specific Filters -->
       <div class="carousel-section">
-        
         <!-- TOPS -->
         <div class="category-group">
           <div class="category-header">
@@ -563,9 +548,7 @@
           </div>
           <div class="carousel" id="carousel-outerwear"></div>
         </div>
-
       </div>
-
     </div>
   </div>
 
@@ -581,6 +564,8 @@
     let wardrobeItems = [];
     let activeTags = new Set();
     let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+    let filterDebounceTimer = null;
+    let imageCache = {};
 
     function formatUUID(id) {
       if (!id) return "";
@@ -687,13 +672,20 @@
         Array.from(allColours).map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
+    // Exclude category choices from showing up as duplicate general tags
     function buildDynamicTagChips() {
-      const predefinedTags = new Set(['comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby']);
-      const dynamicTags = new Set();
+      const excludedOptionTags = new Set([
+        'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby',
+        'shein', 'primark', 'plt', 'hollister', 'victoria secret', 'other',
+        'tight', 'baggy', 'maxi', 'mini', 'midi', 'cropped', 'extra cropped', 'not cropped',
+        'long-sleeved', 'short-sleeved', 'no sleeves', 'sweater', 'hoodie', 'shirt', 'top',
+        'joggers', 'jeans', 'skirt', 'shorts'
+      ]);
 
+      const dynamicTags = new Set();
       wardrobeItems.forEach(item => {
         item.tags.forEach(t => {
-          if (!predefinedTags.has(t)) dynamicTags.add(t);
+          if (!excludedOptionTags.has(t)) dynamicTags.add(t);
         });
       });
 
@@ -714,13 +706,17 @@
       applyFilters();
     }
 
+    function debouncedApplyFilters() {
+      clearTimeout(filterDebounceTimer);
+      filterDebounceTimer = setTimeout(applyFilters, 150);
+    }
+
     function applyFilters() {
       const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
       const selectedColour = document.getElementById("colour-select").value.toLowerCase();
       const selectedBrand = document.getElementById("brand-select").value.toLowerCase();
       const selectedFit = document.getElementById("fit-select").value.toLowerCase();
 
-      // Category specific filter selections
       const topType = document.getElementById("top-type-select").value.toLowerCase();
       const topCrop = document.getElementById("top-crop-select").value.toLowerCase();
       const topSleeve = document.getElementById("top-sleeve-select").value.toLowerCase();
@@ -736,10 +732,8 @@
         const matchesBrand = !selectedBrand || item.brand === selectedBrand || (selectedBrand === 'other' && !['shein','primark','plt','hollister','victoria secret'].includes(item.brand));
         const matchesFit = !selectedFit || item.fit === selectedFit;
 
-        // Tags logic (matches predefined + dynamically generated tags)
         const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
 
-        // Category specific checks
         let matchesCatFilters = true;
         if (item.category === 'top') {
           if (topType && item.itemType !== topType) matchesCatFilters = false;
@@ -775,7 +769,7 @@
         container.innerHTML = catItems.map(item => `
           <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
                onclick="selectItem('${cat}', '${item.id}', this)">
-            <img src="${item.url}" alt="${item.name}" crossorigin="anonymous" />
+            <img src="${item.url}" alt="${item.name}" loading="lazy" crossorigin="anonymous" />
             <span>${item.name}</span>
           </div>
         `).join('');
@@ -811,6 +805,21 @@
       drawOutfitCanvas();
     }
 
+    // Parallelized Image Loader for Fast Drawing
+    function loadImage(url) {
+      if (imageCache[url]) return Promise.resolve(imageCache[url]);
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = url;
+        img.onload = () => {
+          imageCache[url] = img;
+          resolve(img);
+        };
+        img.onerror = () => resolve(null);
+      });
+    }
+
     async function drawOutfitCanvas() {
       const canvas = document.getElementById('outfit-canvas');
       const ctx = canvas.getContext('2d');
@@ -826,73 +835,60 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      // Draw base mannequin
-      await new Promise((resolve) => {
-        const personImg = new Image();
-        personImg.src = PERSON_IMAGE_URL;
-        personImg.onload = () => {
-          const personHeight = 310;
-          const personWidth = 140;
-          const xPos = (rect.width - personWidth) / 2;
-          ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
-          resolve();
-        };
-        personImg.onerror = () => resolve();
-      });
+      // Load mannequin in parallel
+      const personImg = await loadImage(PERSON_IMAGE_URL);
+      if (personImg) {
+        const personHeight = 310;
+        const personWidth = 140;
+        const xPos = (rect.width - personWidth) / 2;
+        ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
+      }
 
       const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
+      const activeLayers = layers.filter(layer => selectedOutfit[layer] && selectedOutfit[layer].url);
 
-      for (const layer of layers) {
-        if (selectedOutfit[layer] && selectedOutfit[layer].url) {
-          await new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.src = selectedOutfit[layer].url;
-            img.onload = () => {
-              let width = 110;
-              let height = 110;
-              let yPos = 45;
-              let xPos = (rect.width - width) / 2;
+      // Fetch all layer images concurrently
+      const loadedLayerImages = await Promise.all(
+        activeLayers.map(layer => loadImage(selectedOutfit[layer].url).then(img => ({ layer, img })))
+      );
 
-              // Dress 1:2 height ratio adjustment (twice as long as regular tops)
-              if (layer === 'dresses') {
-                width = 120;
-                height = 210; // Scaled to 1:2 aspect ratio relative to body
-                yPos = 42;
-                xPos = (rect.width - width) / 2;
-              }
-              if (layer === 'top') { 
-                width = 110; 
-                height = 110;
-                yPos = 45; 
-                xPos = (rect.width - width) / 2;
-              }
-              if (layer === 'bottom') { 
-                width = 145; 
-                height = 145;
-                yPos = 148; 
-                xPos = (rect.width - width) / 2;
-              }
-              if (layer === 'shoes') { 
-                width = 80; 
-                height = 80;
-                yPos = 245; 
-                xPos = (rect.width - width) / 2;
-              }
-              if (layer === 'outerwear') { 
-                width = 120; 
-                height = 120;
-                yPos = 55;
-                xPos = rect.width - width - 10;
-              }
+      loadedLayerImages.forEach(({ layer, img }) => {
+        if (!img) return;
 
-              ctx.drawImage(img, xPos, yPos, width, height);
-              resolve();
-            };
-            img.onerror = () => resolve();
-          });
+        let width = 110;
+        let height = 110;
+        let yPos = 45;
+        let xPos = (rect.width - width) / 2;
+
+        if (layer === 'dresses') {
+          width = 120;
+          height = 210; // Dress 1:2 aspect ratio scaling
+          yPos = 42;
+          xPos = (rect.width - width) / 2;
+        } else if (layer === 'top') { 
+          width = 110; 
+          height = 110;
+          yPos = 45; 
+          xPos = (rect.width - width) / 2;
+        } else if (layer === 'bottom') { 
+          width = 145; 
+          height = 145;
+          yPos = 148; 
+          xPos = (rect.width - width) / 2;
+        } else if (layer === 'shoes') { 
+          width = 80; 
+          height = 80;
+          yPos = 245; 
+          xPos = (rect.width - width) / 2;
+        } else if (layer === 'outerwear') { 
+          width = 120; 
+          height = 120;
+          yPos = 55;
+          xPos = rect.width - width - 10;
         }
-      }
+
+        ctx.drawImage(img, xPos, yPos, width, height);
+      });
     }
 
     async function saveOutfit() {
