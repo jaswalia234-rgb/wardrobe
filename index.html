@@ -617,461 +617,460 @@
 
   <script>
     const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev";
-    const NOTION_TOKEN = "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";
-    const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
-    const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
+const NOTION_TOKEN = "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";
+const WARDROBE_DB_ID = "40eaedaf73e8806dbddfdef92af3548e";
+const OUTFIT_LOG_DB_ID = "40eaedaf73e88080954ccbde44d02c5b";
 
-    const IMGBB_API_KEY = "68fdfb239efee78e8b09fffe8e50bdf7"; 
-    const PERSON_IMAGE_URL = "images/person.png";
+const IMGBB_API_KEY = "68fdfb239efee78e8b09fffe8e50bdf7"; 
+const PERSON_IMAGE_URL = "images/person.png";
 
-    let wardrobeItems = [];
-    let activeTags = new Set();
-    let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
-    let filterDebounceTimer = null;
-    let imageCache = {};
+let wardrobeItems = [];
+let activeTags = new Set();
+let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+let filterDebounceTimer = null;
+let imageCache = {};
 
-    function formatUUID(id) {
-      if (!id) return "";
-      const clean = id.replace(/-/g, "");
-      if (clean.length !== 32) return id;
-      return `${clean.slice(0,8)}-${clean.slice(8,12)}-${clean.slice(12,16)}-${clean.slice(16,20)}-${clean.slice(20)}`;
-    }
+function formatUUID(id) {
+  if (!id) return "";
+  const clean = id.replace(/-/g, "");
+  if (clean.length !== 32) return id;
+  return `${clean.slice(0,8)}-${clean.slice(8,12)}-${clean.slice(12,16)}-${clean.slice(16,20)}-${clean.slice(20)}`;
+}
 
-    // Chromatic Color Sorting Mapping
-    function getColorWeight(colorName) {
-      const c = colorName.toLowerCase();
+function getColorWeight(colorName) {
+  const c = colorName.toLowerCase();
+  if (c.includes('white') || c.includes('cream') || c.includes('ivory') || c.includes('nude')) return 10;
+  if (c.includes('pink') || c.includes('rose') || c.includes('blush')) return 20;
+  if (c.includes('red') || c.includes('burgundy') || c.includes('maroon') || c.includes('wine')) return 30;
+  if (c.includes('orange') || c.includes('rust') || c.includes('peach')) return 40;
+  if (c.includes('yellow') || c.includes('gold') || c.includes('mustard')) return 50;
+  if (c.includes('sage') || c.includes('mint') || c.includes('light green')) return 60;
+  if (c.includes('green') || c.includes('khaki') || c.includes('olive') || c.includes('emerald') || c.includes('dark green')) return 70;
+  if (c.includes('light blue') || c.includes('sky') || c.includes('baby blue')) return 80;
+  if (c.includes('blue') || c.includes('denim') || c.includes('cobalt') || c.includes('royal')) return 85;
+  if (c.includes('navy') || c.includes('dark blue')) return 88;
+  if (c.includes('lilac') || c.includes('lavender') || c.includes('purple') || c.includes('violet') || c.includes('plum')) return 90;
+  if (c.includes('beige') || c.includes('tan') || c.includes('camel') || c.includes('brown') || c.includes('chocolate')) return 100;
+  if (c.includes('light grey') || c.includes('silver')) return 110;
+  if (c.includes('grey') || c.includes('gray') || c.includes('charcoal')) return 115;
+  if (c.includes('black')) return 120;
+  return 200;
+}
 
-      // Whites & Neutrals
-      if (c.includes('white') || c.includes('cream') || c.includes('ivory') || c.includes('nude')) return 10;
-      
-      // Pinks & Reds
-      if (c.includes('pink') || c.includes('rose') || c.includes('blush')) return 20;
-      if (c.includes('red') || c.includes('burgundy') || c.includes('maroon') || c.includes('wine')) return 30;
-      
-      // Oranges & Yellows
-      if (c.includes('orange') || c.includes('rust') || c.includes('peach')) return 40;
-      if (c.includes('yellow') || c.includes('gold') || c.includes('mustard')) return 50;
-      
-      // Greens
-      if (c.includes('sage') || c.includes('mint') || c.includes('light green')) return 60;
-      if (c.includes('green') || c.includes('khaki') || c.includes('olive') || c.includes('emerald') || c.includes('dark green')) return 70;
-      
-      // Blues (light blue -> cyan -> royal blue -> navy)
-      if (c.includes('light blue') || c.includes('sky') || c.includes('baby blue')) return 80;
-      if (c.includes('blue') || c.includes('denim') || c.includes('cobalt') || c.includes('royal')) return 85;
-      if (c.includes('navy') || c.includes('dark blue')) return 88;
-      
-      // Purples & Lilacs
-      if (c.includes('lilac') || c.includes('lavender') || c.includes('purple') || c.includes('violet') || c.includes('plum')) return 90;
-      
-      // Browns & Beiges
-      if (c.includes('beige') || c.includes('tan') || c.includes('camel') || c.includes('brown') || c.includes('chocolate')) return 100;
-      
-      // Greys, Charcoal & Blacks
-      if (c.includes('light grey') || c.includes('silver')) return 110;
-      if (c.includes('grey') || c.includes('gray') || c.includes('charcoal')) return 115;
-      if (c.includes('black')) return 120;
+async function fetchFromNotion() {
+  const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
+  const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
 
-      // Unrecognized/Other colors at end
-      return 200;
-    }
+  try {
+    const response = await fetch(proxiedUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${NOTION_TOKEN}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        filter: { property: "status", select: { equals: "clean" } },
+        page_size: 100
+      })
+    });
 
-    async function fetchFromNotion() {
-      const notionEndpoint = `https://api.notion.com/v1/databases/${WARDROBE_DB_ID}/query`;
-      const proxiedUrl = `${WORKER_URL}?url=${encodeURIComponent(notionEndpoint)}`;
+    const data = await response.json();
+    if (!data.results) return;
 
-      try {
-        const response = await fetch(proxiedUrl, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${NOTION_TOKEN}`,
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            filter: { property: "status", select: { equals: "clean" } }
-          })
-        });
+    // Parse metadata synchronously
+    wardrobeItems = data.results.map(page => {
+      const props = page.properties;
 
-        const data = await response.json();
-        if (!data.results) return;
+      const titleObj = props.name || props.Name || props.Title;
+      const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
 
-        wardrobeItems = data.results.map(page => {
-          const props = page.properties;
+      let cat = props.category?.select?.name?.toLowerCase() || "top";
+      if (cat === "bottoms") cat = "bottom";
+      if (cat === "dress") cat = "dresses";
 
-          const titleObj = props.name || props.Name || props.Title;
-          const itemName = titleObj?.title?.[0]?.plain_text?.toLowerCase() || "unnamed";
-
-          let cat = props.category?.select?.name?.toLowerCase() || "top";
-          if (cat === "bottoms") cat = "bottom";
-          if (cat === "dress") cat = "dresses";
-
-          const colourProp = props.colour || props.Colour || props.color || props.Color;
-          const colors = [];
-          if (colourProp?.multi_select) {
-            colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
-          } else if (colourProp?.select?.name) {
-            colors.push(colourProp.select.name.toLowerCase());
-          } else if (colourProp?.rich_text?.[0]?.plain_text) {
-            colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
-          }
-
-          const extractSingleVal = (prop) => prop?.select?.name?.toLowerCase() || prop?.rich_text?.[0]?.plain_text?.toLowerCase() || "";
-
-          const brand = extractSingleVal(props.brand || props.Brand);
-          const fit = extractSingleVal(props.fit || props.Fit);
-          const itemType = extractSingleVal(props.type || props.Type);
-          const crop = extractSingleVal(props.crop || props.Crop);
-          const sleeve = extractSingleVal(props["sleeve length"] || props["Sleeve Length"] || props.sleeve);
-          const length = extractSingleVal(props.length || props.Length);
-
-          const tagsProp = props.tags || props.Tags;
-          const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
-
-          let rawImgUrl = "";
-          const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
-          if (imgProp?.files?.[0]) {
-            rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
-          } else if (imgProp?.url) {
-            rawImgUrl = imgProp.url;
-          }
-
-          const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
-
-          return {
-            id: page.id,
-            name: itemName,
-            category: cat,
-            colors: colors,
-            tags: tags,
-            brand: brand,
-            fit: fit,
-            itemType: itemType,
-            crop: crop,
-            sleeve: sleeve,
-            length: length,
-            url: proxiedImgUrl
-          };
-        });
-
-        populateColourDropdown();
-        buildDynamicTagChips();
-        renderCarousels(wardrobeItems);
-        drawOutfitCanvas();
-      } catch (err) {
-        console.error("error fetching notion wardrobe:", err);
+      const colourProp = props.colour || props.Colour || props.color || props.Color;
+      const colors = [];
+      if (colourProp?.multi_select) {
+        colourProp.multi_select.forEach(c => colors.push(c.name.toLowerCase()));
+      } else if (colourProp?.select?.name) {
+        colors.push(colourProp.select.name.toLowerCase());
+      } else if (colourProp?.rich_text?.[0]?.plain_text) {
+        colors.push(colourProp.rich_text[0].plain_text.toLowerCase());
       }
+
+      const extractSingleVal = (prop) => prop?.select?.name?.toLowerCase() || prop?.rich_text?.[0]?.plain_text?.toLowerCase() || "";
+
+      const brand = extractSingleVal(props.brand || props.Brand);
+      const fit = extractSingleVal(props.fit || props.Fit);
+      const itemType = extractSingleVal(props.type || props.Type);
+      const crop = extractSingleVal(props.crop || props.Crop);
+      const sleeve = extractSingleVal(props["sleeve length"] || props["Sleeve Length"] || props.sleeve);
+      const length = extractSingleVal(props.length || props.Length);
+
+      const tagsProp = props.tags || props.Tags;
+      const tags = tagsProp?.multi_select?.map(t => t.name.toLowerCase()) || [];
+
+      let rawImgUrl = "";
+      const imgProp = props["image url"] || props["Image URL"] || props["Image"] || props["image"];
+      if (imgProp?.files?.[0]) {
+        rawImgUrl = imgProp.files[0].file?.url || imgProp.files[0].external?.url || "";
+      } else if (imgProp?.url) {
+        rawImgUrl = imgProp.url;
+      }
+
+      // Fast proxied image URL generator
+      const proxiedImgUrl = rawImgUrl ? `${WORKER_URL}?type=image&url=${encodeURIComponent(rawImgUrl)}` : "";
+
+      return {
+        id: page.id,
+        name: itemName,
+        category: cat,
+        colors: colors,
+        tags: tags,
+        brand: brand,
+        fit: fit,
+        itemType: itemType,
+        crop: crop,
+        sleeve: sleeve,
+        length: length,
+        url: proxiedImgUrl
+      };
+    });
+
+    // 1. Render UI skeleton immediately
+    populateColourDropdown();
+    buildDynamicTagChips();
+    renderCarousels(wardrobeItems);
+    drawOutfitCanvas();
+
+    // 2. Pre-cache visible image assets in the background
+    preloadInitialImages();
+
+  } catch (err) {
+    console.error("error fetching notion wardrobe:", err);
+  }
+}
+
+function preloadInitialImages() {
+  // Preloads the first 3 items in each category so carousels pop up instantaneously
+  const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
+  categories.forEach(cat => {
+    const catItems = wardrobeItems.filter(i => i.category === cat).slice(0, 3);
+    catItems.forEach(item => {
+      if (item.url) loadImage(item.url);
+    });
+  });
+}
+
+function populateColourDropdown() {
+  const allColours = new Set();
+  wardrobeItems.forEach(item => {
+    item.colors.forEach(c => allColours.add(c));
+  });
+
+  const sortedColours = Array.from(allColours).sort((a, b) => {
+    const weightA = getColorWeight(a);
+    const weightB = getColorWeight(b);
+    if (weightA === weightB) return a.localeCompare(b);
+    return weightA - weightB;
+  });
+
+  const select = document.getElementById("colour-select");
+  select.innerHTML = '<option value="">all colours</option>' + 
+    sortedColours.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function buildDynamicTagChips() {
+  const excludedOptionTags = new Set([
+    'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby',
+    'shein', 'primark', 'plt', 'hollister', 'victoria secret', 'other',
+    'tight', 'baggy', 'maxi', 'mini', 'midi', 'cropped', 'extra cropped', 'not cropped',
+    'long-sleeved', 'short-sleeved', 'no sleeves', 'sweater', 'hoodie', 'shirt', 'top',
+    'joggers', 'jeans', 'skirt', 'shorts'
+  ]);
+
+  const dynamicTags = new Set();
+  wardrobeItems.forEach(item => {
+    item.tags.forEach(t => {
+      if (!excludedOptionTags.has(t)) dynamicTags.add(t);
+    });
+  });
+
+  const container = document.getElementById("dynamic-tag-chips");
+  container.innerHTML = Array.from(dynamicTags).map(tag => `
+    <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
+  `).join('');
+}
+
+function toggleTagFilter(tag, element) {
+  if (activeTags.has(tag)) {
+    activeTags.delete(tag);
+    element.classList.remove("active");
+  } else {
+    activeTags.add(tag);
+    element.classList.add("active");
+  }
+  applyFilters();
+}
+
+function debouncedApplyFilters() {
+  clearTimeout(filterDebounceTimer);
+  filterDebounceTimer = setTimeout(applyFilters, 100);
+}
+
+function applyFilters() {
+  const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
+  const selectedColour = document.getElementById("colour-select").value.toLowerCase();
+  const selectedBrand = document.getElementById("brand-select").value.toLowerCase();
+  const selectedFit = document.getElementById("fit-select").value.toLowerCase();
+
+  const topType = document.getElementById("top-type-select").value.toLowerCase();
+  const topCrop = document.getElementById("top-crop-select").value.toLowerCase();
+  const topSleeve = document.getElementById("top-sleeve-select").value.toLowerCase();
+
+  const bottomType = document.getElementById("bottom-type-select").value.toLowerCase();
+
+  const dressLength = document.getElementById("dress-length-select").value.toLowerCase();
+  const dressSleeve = document.getElementById("dress-sleeve-select").value.toLowerCase();
+
+  const filtered = wardrobeItems.filter(item => {
+    const matchesSearch = !searchQuery || item.name.includes(searchQuery);
+    const matchesColour = !selectedColour || item.colors.includes(selectedColour);
+    const matchesBrand = !selectedBrand || item.brand === selectedBrand || (selectedBrand === 'other' && !['shein','primark','plt','hollister','victoria secret'].includes(item.brand));
+    const matchesFit = !selectedFit || item.fit === selectedFit;
+
+    const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
+
+    let matchesCatFilters = true;
+    if (item.category === 'top') {
+      if (topType && item.itemType !== topType) matchesCatFilters = false;
+      if (topCrop && item.crop !== topCrop) matchesCatFilters = false;
+      if (topSleeve && item.sleeve !== topSleeve) matchesCatFilters = false;
+    } else if (item.category === 'bottom') {
+      if (bottomType && item.itemType !== bottomType) matchesCatFilters = false;
+    } else if (item.category === 'dresses') {
+      if (dressLength && item.length !== dressLength) matchesCatFilters = false;
+      if (dressSleeve && item.sleeve !== dressSleeve) matchesCatFilters = false;
     }
 
-    function populateColourDropdown() {
-      const allColours = new Set();
-      wardrobeItems.forEach(item => {
-        item.colors.forEach(c => allColours.add(c));
-      });
+    return matchesSearch && matchesColour && matchesBrand && matchesFit && matchesTags && matchesCatFilters;
+  });
 
-      // Sort colors chromatically using custom spectrum weights
-      const sortedColours = Array.from(allColours).sort((a, b) => {
-        const weightA = getColorWeight(a);
-        const weightB = getColorWeight(b);
-        if (weightA === weightB) return a.localeCompare(b);
-        return weightA - weightB;
-      });
+  renderCarousels(filtered);
+}
 
-      const select = document.getElementById("colour-select");
-      select.innerHTML = '<option value="">all colours</option>' + 
-        sortedColours.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
+function renderCarousels(items) {
+  const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
 
-    function buildDynamicTagChips() {
-      const excludedOptionTags = new Set([
-        'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby',
-        'shein', 'primark', 'plt', 'hollister', 'victoria secret', 'other',
-        'tight', 'baggy', 'maxi', 'mini', 'midi', 'cropped', 'extra cropped', 'not cropped',
-        'long-sleeved', 'short-sleeved', 'no sleeves', 'sweater', 'hoodie', 'shirt', 'top',
-        'joggers', 'jeans', 'skirt', 'shorts'
-      ]);
+  categories.forEach(cat => {
+    const container = document.getElementById(`carousel-${cat}`);
+    if (!container) return;
 
-      const dynamicTags = new Set();
-      wardrobeItems.forEach(item => {
-        item.tags.forEach(t => {
-          if (!excludedOptionTags.has(t)) dynamicTags.add(t);
-        });
-      });
+    const catItems = items.filter(i => i.category === cat);
 
-      const container = document.getElementById("dynamic-tag-chips");
-      container.innerHTML = Array.from(dynamicTags).map(tag => `
-        <div class="filter-chip" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
+    if (catItems.length === 0) {
+      container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
+    } else {
+      container.innerHTML = catItems.map(item => `
+        <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
+             onclick="selectItem('${cat}', '${item.id}', this)">
+          <img src="${item.url}" alt="${item.name}" loading="lazy" decoding="async" crossorigin="anonymous" />
+          <span>${item.name}</span>
+        </div>
       `).join('');
     }
 
-    function toggleTagFilter(tag, element) {
-      if (activeTags.has(tag)) {
-        activeTags.delete(tag);
-        element.classList.remove("active");
-      } else {
-        activeTags.add(tag);
-        element.classList.add("active");
-      }
-      applyFilters();
+    setTimeout(() => checkCarouselArrows(cat), 30);
+  });
+}
+
+function scrollCarousel(cat, offset) {
+  const container = document.getElementById(`carousel-${cat}`);
+  if (!container) return;
+  container.scrollBy({ left: offset, behavior: 'smooth' });
+}
+
+function checkCarouselArrows(cat) {
+  const container = document.getElementById(`carousel-${cat}`);
+  const leftArrow = document.getElementById(`arrow-left-${cat}`);
+  const rightArrow = document.getElementById(`arrow-right-${cat}`);
+  if (!container || !leftArrow || !rightArrow) return;
+
+  const scrollLeft = container.scrollLeft;
+  const maxScroll = container.scrollWidth - container.clientWidth;
+
+  if (scrollLeft > 5) {
+    leftArrow.classList.add("visible");
+  } else {
+    leftArrow.classList.remove("visible");
+  }
+
+  if (scrollLeft < maxScroll - 5 && maxScroll > 0) {
+    rightArrow.classList.add("visible");
+  } else {
+    rightArrow.classList.remove("visible");
+  }
+}
+
+function selectItem(category, itemId, element) {
+  const item = wardrobeItems.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (category === 'dresses') {
+    selectedOutfit.top = null;
+    selectedOutfit.bottom = null;
+  } else if (category === 'top' || category === 'bottom') {
+    selectedOutfit.dresses = null;
+  }
+
+  selectedOutfit[category] = item;
+
+  applyFilters();
+  drawOutfitCanvas();
+}
+
+function clearCategory(category) {
+  selectedOutfit[category] = null;
+  applyFilters();
+  drawOutfitCanvas();
+}
+
+function clearAllOutfit() {
+  selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+  applyFilters();
+  drawOutfitCanvas();
+}
+
+function loadImage(url) {
+  if (imageCache[url]) return Promise.resolve(imageCache[url]);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = url;
+    img.onload = () => {
+      imageCache[url] = img;
+      resolve(img);
+    };
+    img.onerror = () => resolve(null);
+  });
+}
+
+async function drawOutfitCanvas() {
+  const canvas = document.getElementById('outfit-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, rect.width, rect.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, rect.width, rect.height);
+
+  const personImg = await loadImage(PERSON_IMAGE_URL);
+  if (personImg) {
+    const personHeight = 310;
+    const personWidth = 140;
+    const xPos = (rect.width - personWidth) / 2;
+    ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
+  }
+
+  const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
+  const activeLayers = layers.filter(layer => selectedOutfit[layer] && selectedOutfit[layer].url);
+
+  const loadedLayerImages = await Promise.all(
+    activeLayers.map(layer => loadImage(selectedOutfit[layer].url).then(img => ({ layer, img })))
+  );
+
+  loadedLayerImages.forEach(({ layer, img }) => {
+    if (!img) return;
+
+    let width = 110;
+    let height = 110;
+    let yPos = 45;
+    let xPos = (rect.width - width) / 2;
+
+    if (layer === 'dresses') {
+      width = 120;
+      height = 210;
+      yPos = 42;
+      xPos = (rect.width - width) / 2;
+    } else if (layer === 'top') { 
+      width = 110; 
+      height = 110;
+      yPos = 45; 
+      xPos = (rect.width - width) / 2;
+    } else if (layer === 'bottom') { 
+      width = 145; 
+      height = 145;
+      yPos = 148; 
+      xPos = (rect.width - width) / 2;
+    } else if (layer === 'shoes') { 
+      width = 80; 
+      height = 80;
+      yPos = 245; 
+      xPos = (rect.width - width) / 2;
+    } else if (layer === 'outerwear') { 
+      width = 120; 
+      height = 120;
+      yPos = 55;
+      xPos = rect.width - width - 10;
     }
 
-    function debouncedApplyFilters() {
-      clearTimeout(filterDebounceTimer);
-      filterDebounceTimer = setTimeout(applyFilters, 150);
+    ctx.drawImage(img, xPos, yPos, width, height);
+  });
+}
+
+async function saveOutfit() {
+  const canvas = document.getElementById('outfit-canvas');
+  const canvasDataBase64 = canvas.toDataURL('image/png');
+
+  const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
+  const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
+
+  const relationIds = Object.values(selectedOutfit)
+    .filter(item => item !== null && item.id)
+    .map(item => ({ id: formatUUID(item.id) }));
+
+  const todayISO = new Date().toISOString().split('T')[0];
+
+  const payload = {
+    parentDatabaseId: formatUUID(OUTFIT_LOG_DB_ID),
+    title: `outfit - ${new Date().toLocaleDateString('en-GB')}`,
+    date: todayISO,
+    relations: relationIds,
+    bra: braState,
+    tights: tightsState,
+    imageBase64: canvasDataBase64,
+    imgbbKey: IMGBB_API_KEY
+  };
+
+  try {
+    const response = await fetch(`${WORKER_URL}?action=save-outfit-with-image`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const resData = await response.json();
+
+    if (response.ok) {
+      alert("outfit saved cleanly with full canvas preview cover!");
+    } else {
+      console.error("notion error details:", resData);
+      alert(`failed: ${resData.message || 'check console'}`);
     }
+  } catch (err) {
+    console.error("error saving to notion:", err);
+    alert("network error saving to notion.");
+  }
+}
 
-    function applyFilters() {
-      const searchQuery = document.getElementById("search-box").value.toLowerCase().trim();
-      const selectedColour = document.getElementById("colour-select").value.toLowerCase();
-      const selectedBrand = document.getElementById("brand-select").value.toLowerCase();
-      const selectedFit = document.getElementById("fit-select").value.toLowerCase();
-
-      const topType = document.getElementById("top-type-select").value.toLowerCase();
-      const topCrop = document.getElementById("top-crop-select").value.toLowerCase();
-      const topSleeve = document.getElementById("top-sleeve-select").value.toLowerCase();
-
-      const bottomType = document.getElementById("bottom-type-select").value.toLowerCase();
-
-      const dressLength = document.getElementById("dress-length-select").value.toLowerCase();
-      const dressSleeve = document.getElementById("dress-sleeve-select").value.toLowerCase();
-
-      const filtered = wardrobeItems.filter(item => {
-        const matchesSearch = !searchQuery || item.name.includes(searchQuery);
-        const matchesColour = !selectedColour || item.colors.includes(selectedColour);
-        const matchesBrand = !selectedBrand || item.brand === selectedBrand || (selectedBrand === 'other' && !['shein','primark','plt','hollister','victoria secret'].includes(item.brand));
-        const matchesFit = !selectedFit || item.fit === selectedFit;
-
-        const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
-
-        let matchesCatFilters = true;
-        if (item.category === 'top') {
-          if (topType && item.itemType !== topType) matchesCatFilters = false;
-          if (topCrop && item.crop !== topCrop) matchesCatFilters = false;
-          if (topSleeve && item.sleeve !== topSleeve) matchesCatFilters = false;
-        } else if (item.category === 'bottom') {
-          if (bottomType && item.itemType !== bottomType) matchesCatFilters = false;
-        } else if (item.category === 'dresses') {
-          if (dressLength && item.length !== dressLength) matchesCatFilters = false;
-          if (dressSleeve && item.sleeve !== dressSleeve) matchesCatFilters = false;
-        }
-
-        return matchesSearch && matchesColour && matchesBrand && matchesFit && matchesTags && matchesCatFilters;
-      });
-
-      renderCarousels(filtered);
-    }
-
-    function renderCarousels(items) {
-      const categories = ['top', 'bottom', 'dresses', 'shoes', 'outerwear'];
-
-      categories.forEach(cat => {
-        const container = document.getElementById(`carousel-${cat}`);
-        if (!container) return;
-
-        const catItems = items.filter(i => i.category === cat);
-
-        if (catItems.length === 0) {
-          container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${cat}s</span>`;
-        } else {
-          container.innerHTML = catItems.map(item => `
-            <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}" 
-                 onclick="selectItem('${cat}', '${item.id}', this)">
-              <img src="${item.url}" alt="${item.name}" loading="lazy" crossorigin="anonymous" />
-              <span>${item.name}</span>
-            </div>
-          `).join('');
-        }
-
-        setTimeout(() => checkCarouselArrows(cat), 50);
-      });
-    }
-
-    function scrollCarousel(cat, offset) {
-      const container = document.getElementById(`carousel-${cat}`);
-      if (!container) return;
-      container.scrollBy({ left: offset, behavior: 'smooth' });
-    }
-
-    function checkCarouselArrows(cat) {
-      const container = document.getElementById(`carousel-${cat}`);
-      const leftArrow = document.getElementById(`arrow-left-${cat}`);
-      const rightArrow = document.getElementById(`arrow-right-${cat}`);
-      if (!container || !leftArrow || !rightArrow) return;
-
-      const scrollLeft = container.scrollLeft;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-
-      if (scrollLeft > 5) {
-        leftArrow.classList.add("visible");
-      } else {
-        leftArrow.classList.remove("visible");
-      }
-
-      if (scrollLeft < maxScroll - 5 && maxScroll > 0) {
-        rightArrow.classList.add("visible");
-      } else {
-        rightArrow.classList.remove("visible");
-      }
-    }
-
-    function selectItem(category, itemId, element) {
-      const item = wardrobeItems.find(i => i.id === itemId);
-      if (!item) return;
-
-      if (category === 'dresses') {
-        selectedOutfit.top = null;
-        selectedOutfit.bottom = null;
-      } else if (category === 'top' || category === 'bottom') {
-        selectedOutfit.dresses = null;
-      }
-
-      selectedOutfit[category] = item;
-
-      applyFilters();
-      drawOutfitCanvas();
-    }
-
-    function clearCategory(category) {
-      selectedOutfit[category] = null;
-      applyFilters();
-      drawOutfitCanvas();
-    }
-
-    function clearAllOutfit() {
-      selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
-      applyFilters();
-      drawOutfitCanvas();
-    }
-
-    function loadImage(url) {
-      if (imageCache[url]) return Promise.resolve(imageCache[url]);
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = url;
-        img.onload = () => {
-          imageCache[url] = img;
-          resolve(img);
-        };
-        img.onerror = () => resolve(null);
-      });
-    }
-
-    async function drawOutfitCanvas() {
-      const canvas = document.getElementById('outfit-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, rect.width, rect.height);
-
-      const personImg = await loadImage(PERSON_IMAGE_URL);
-      if (personImg) {
-        const personHeight = 310;
-        const personWidth = 140;
-        const xPos = (rect.width - personWidth) / 2;
-        ctx.drawImage(personImg, xPos, 10, personWidth, personHeight);
-      }
-
-      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
-      const activeLayers = layers.filter(layer => selectedOutfit[layer] && selectedOutfit[layer].url);
-
-      const loadedLayerImages = await Promise.all(
-        activeLayers.map(layer => loadImage(selectedOutfit[layer].url).then(img => ({ layer, img })))
-      );
-
-      loadedLayerImages.forEach(({ layer, img }) => {
-        if (!img) return;
-
-        let width = 110;
-        let height = 110;
-        let yPos = 45;
-        let xPos = (rect.width - width) / 2;
-
-        if (layer === 'dresses') {
-          width = 120;
-          height = 210;
-          yPos = 42;
-          xPos = (rect.width - width) / 2;
-        } else if (layer === 'top') { 
-          width = 110; 
-          height = 110;
-          yPos = 45; 
-          xPos = (rect.width - width) / 2;
-        } else if (layer === 'bottom') { 
-          width = 145; 
-          height = 145;
-          yPos = 148; 
-          xPos = (rect.width - width) / 2;
-        } else if (layer === 'shoes') { 
-          width = 80; 
-          height = 80;
-          yPos = 245; 
-          xPos = (rect.width - width) / 2;
-        } else if (layer === 'outerwear') { 
-          width = 120; 
-          height = 120;
-          yPos = 55;
-          xPos = rect.width - width - 10;
-        }
-
-        ctx.drawImage(img, xPos, yPos, width, height);
-      });
-    }
-
-    async function saveOutfit() {
-      const canvas = document.getElementById('outfit-canvas');
-      const canvasDataBase64 = canvas.toDataURL('image/png');
-
-      const braState = document.getElementById('bra-switch').checked ? 'yes' : 'no';
-      const tightsState = document.getElementById('tights-switch').checked ? 'yes' : 'no';
-
-      const relationIds = Object.values(selectedOutfit)
-        .filter(item => item !== null && item.id)
-        .map(item => ({ id: formatUUID(item.id) }));
-
-      const todayISO = new Date().toISOString().split('T')[0];
-
-      const payload = {
-        parentDatabaseId: formatUUID(OUTFIT_LOG_DB_ID),
-        title: `outfit - ${new Date().toLocaleDateString('en-GB')}`,
-        date: todayISO,
-        relations: relationIds,
-        bra: braState,
-        tights: tightsState,
-        imageBase64: canvasDataBase64,
-        imgbbKey: IMGBB_API_KEY
-      };
-
-      try {
-        const response = await fetch(`${WORKER_URL}?action=save-outfit-with-image`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        const resData = await response.json();
-
-        if (response.ok) {
-          alert("outfit saved cleanly with full canvas preview cover!");
-        } else {
-          console.error("notion error details:", resData);
-          alert(`failed: ${resData.message || 'check console'}`);
-        }
-      } catch (err) {
-        console.error("error saving to notion:", err);
-        alert("network error saving to notion.");
-      }
-    }
-
-    fetchFromNotion();
+fetchFromNotion();
   </script>
 </body>
 </html>
