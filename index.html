@@ -1022,10 +1022,10 @@
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, rect.width, rect.height);
+      
+// AFTER (Leaves background 100% transparent PNG):
+ctx.clearRect(0, 0, rect.width, rect.height);
+// Only draw the mannequin and clothes overlay over a transparent background
 
       const personImg = await loadImage(PERSON_IMAGE_URL);
       if (personImg) {
