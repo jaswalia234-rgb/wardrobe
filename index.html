@@ -2,636 +2,406 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#221A1D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="wardrobe" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="icon" href="icon-192.png" />
   <title>wardrobe</title>
   <style>
     /* mocha, to match your planner */
     :root {
       --bg: #221A1D; --surf: #2E2428; --surf2: #3A2E33; --surf3: #47383E;
       --text: #F3E8E4; --text2: #B5A2A2; --text3: #7F6D70;
-      --rule: rgba(255, 240, 235, 0.08); --ink: #2A1F23; --accent: #E7A9A2; --accent-hover: #F0BCB5;
-      --tile: #F3E8E4; --tile-sel: #FBF1EE; --subtext: var(--text2); --text-color: var(--text); --card-bg: var(--surf);
-      --radius-lg: 22px; --radius-md: 15px;
+      --ink: #2A1F23; --accent: #E7A9A2; --accent2: #F0BCB5;
+      --tile: #F3E8E4; --tile2: #FBF1EE;
+      --r-lg: 22px; --r-md: 15px;
       color-scheme: dark;
-      --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-family); text-transform: lowercase; -webkit-tap-highlight-color: transparent; }
-    html, body { width: 100%; max-width: 100vw; overflow-x: hidden; background: var(--bg); color: var(--text); }
-    body { padding: calc(20px + env(safe-area-inset-top)) 16px 28px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    .container { width: 100%; max-width: 1050px; display: flex; flex-direction: column; gap: 14px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; text-transform: lowercase; -webkit-tap-highlight-color: transparent; }
+    html, body { background: var(--bg); color: var(--text); }
+    body { padding: calc(18px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom)); }
+    button, input, select { font: inherit; color: inherit; }
+    button { background: none; border: 0; cursor: pointer; }
+    svg.i { width: 1em; height: 1em; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .wrap { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+    .label { font-size: 12.5px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text2); }
+    .card { background: var(--surf); border-radius: var(--r-lg); padding: 14px; }
 
-    .header-row { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 2px; }
-    h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.3px; color: var(--text); }
-    .btn-clear-all { height: 36px; padding: 0 16px; background: var(--surf); border: 0; color: var(--text); border-radius: 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
-    .btn-clear-all:hover { background: var(--surf2); }
+    /* top */
+    .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding: 0 2px; }
+    h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.3px; }
+    .sub { font-size: 13.5px; color: var(--text2); margin-top: 3px; }
+    .round { height: 38px; padding: 0 14px; border-radius: 19px; background: var(--surf); display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; }
+    .round:hover { background: var(--surf2); }
 
-    .filter-bar { background: var(--surf); border-radius: var(--radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 12px; }
-    .search-row { display: flex; gap: 8px; width: 100%; flex-wrap: wrap; }
-    .search-input { flex: 2; min-width: 180px; height: 40px; padding: 0 16px; border: 0; border-radius: 20px; font-size: 14.5px; background: var(--surf2); color: var(--text); outline: none; }
-    .search-input::placeholder { color: var(--text3); }
-    .search-input:focus { box-shadow: 0 0 0 2px rgba(231, 169, 162, 0.45); }
-    .dropdown-select { flex: 1; min-width: 120px; height: 40px; padding: 0 30px 0 14px; border: 0; border-radius: 20px; font-size: 13.5px; font-weight: 600; background: var(--surf2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23B5A2A2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center; color: var(--text); outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
-    .dropdown-select option { background: var(--surf); color: var(--text); }
+    /* recent outfits */
+    .recent { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .recent::-webkit-scrollbar { display: none; }
+    .fit { flex: 0 0 auto; width: 92px; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+    .fit .pic { width: 92px; height: 112px; border-radius: 14px; background: var(--tile); overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; place-items: center; padding: 6px; gap: 2px; }
+    .fit .pic.one { display: block; padding: 0; }
+    .fit .pic img { width: 100%; height: 100%; object-fit: contain; }
+    .fit span { font-size: 11.5px; font-weight: 600; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fit:hover .pic { outline: 2.5px solid var(--accent); }
 
-    .tag-filters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .filter-chip { height: 32px; display: inline-flex; align-items: center; padding: 0 13px; background: transparent; border: 1px solid var(--surf3); border-radius: 16px; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; user-select: none; }
-    .filter-chip:hover { color: var(--text); border-color: var(--text3); }
-    .filter-chip.active { background: var(--accent); color: var(--ink); border-color: var(--accent); }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    .grid { grid-template-areas: "prev" "closet" "save"; }
+    .preview { grid-area: prev; } .closet { grid-area: closet; } .savebox { grid-area: save; display: flex; flex-direction: column; gap: 12px; }
+    @media (min-width: 820px) { .grid { grid-template-columns: 330px minmax(0, 1fr); grid-template-areas: "prev closet" "save closet"; grid-template-rows: auto 1fr; } .savebox { align-self: start; } }
 
-    .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; }
-    @media (min-width: 768px) { .dashboard-grid { grid-template-columns: 320px minmax(0, 1fr); } }
-
-    .preview-card { background: var(--surf); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; align-items: stretch; gap: 12px; position: sticky; top: 16px; height: fit-content; }
-    .outfit-display-canvas { width: 100%; height: 340px; background: var(--tile); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .outfit-display-canvas canvas { width: 100%; height: 100%; }
-
-    .controls-panel { width: 100%; display: flex; flex-direction: column; gap: 12px; background: var(--surf2); padding: 14px; border-radius: var(--radius-md); }
-    .control-item { display: flex; justify-content: space-between; align-items: center; font-size: 14.5px; color: var(--text); gap: 10px; }
-    .control-item .dropdown-select { flex: none; min-width: 0; height: 34px; background-color: var(--surf3); }
-    .controls-panel .search-input { background: var(--surf3); height: 36px; }
-    .controls-panel .filter-chip { height: 26px; padding: 0 10px; font-size: 12px; }
-
-    .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+    /* preview */
+    .preview { display: flex; flex-direction: column; gap: 12px; }
+    .stage { position: relative; height: 340px; border-radius: var(--r-md); background: var(--tile); overflow: hidden; }
+    .stage canvas { width: 100%; height: 100%; display: block; }
+    .stage .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #9C8073; font-size: 14px; font-weight: 600; pointer-events: none; }
+    .slots { display: flex; flex-wrap: wrap; gap: 6px; }
+    .slot { height: 32px; padding: 0 12px; border-radius: 16px; background: var(--surf2); font-size: 13px; font-weight: 600; color: var(--text2); display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+    .slot b { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .slot.on:hover { background: var(--surf3); }
+    .slot .x { color: var(--text3); }
+    .actions { display: flex; gap: 8px; }
+    .actions .round { flex: 1; justify-content: center; background: var(--surf2); }
+    .actions .round:hover { background: var(--surf3); }
+    .details { display: flex; flex-direction: column; gap: 11px; background: var(--surf2); border-radius: var(--r-md); padding: 13px; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14.5px; }
+    .field { height: 36px; border: 0; border-radius: 18px; background: var(--surf3); padding: 0 14px; font-size: 14px; outline: none; }
+    .field:focus { box-shadow: 0 0 0 2px rgba(231, 169, 162, 0.45); }
+    .field::placeholder { color: var(--text3); }
+    .switch { position: relative; width: 42px; height: 24px; flex: none; }
     .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; inset: 0; background: var(--surf3); border-radius: 12px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; top: 3px; background: var(--text); border-radius: 50%; transition: transform .15s; }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider:before { transform: translateX(18px); background: var(--ink); }
+    .switch span { position: absolute; inset: 0; border-radius: 12px; background: var(--surf3); cursor: pointer; }
+    .switch span:before { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--text); transition: transform .15s; }
+    .switch input:checked + span { background: var(--accent); }
+    .switch input:checked + span:before { transform: translateX(18px); background: var(--ink); }
+    .save { height: 48px; border-radius: 24px; background: var(--accent); color: var(--ink); font-size: 15.5px; font-weight: 700; }
+    .save:hover { background: var(--accent2); }
+    .save:disabled { opacity: 0.55; cursor: default; }
+    .toast { min-height: 18px; font-size: 13.5px; color: var(--accent); text-align: center; }
 
-    .btn-sync { width: 100%; height: 46px; background: var(--accent); color: var(--ink); border: none; border-radius: 23px; font-size: 15px; font-weight: 700; cursor: pointer; }
-    .btn-sync:hover { background: var(--accent-hover); }
-    .btn-sync:disabled { opacity: 0.6; cursor: default; }
+    /* chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid var(--surf3); font-size: 12.5px; font-weight: 600; color: var(--text2); display: inline-flex; align-items: center; }
+    .chip:hover { color: var(--text); border-color: var(--text3); }
+    .chip.on { background: var(--accent); border-color: var(--accent); color: var(--ink); }
 
-    .carousel-section { display: flex; flex-direction: column; gap: 12px; width: 100%; min-width: 0; }
-    .category-group { background: var(--surf); border-radius: var(--radius-lg); padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 10px; }
-    .category-header { display: flex; justify-content: space-between; align-items: center; }
-    .category-title { font-size: 12.5px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text2); }
-    .preview-card > .category-title { align-self: flex-start; }
-    .category-filters-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .category-filters-row .dropdown-select { flex: none; min-width: 0; height: 34px; font-size: 12.5px; }
-    .btn-clear-cat { background: none; border: none; color: var(--text3); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: 10px; }
-    .btn-clear-cat:hover { color: var(--text); background: var(--surf2); }
+    /* closet */
+    .closet { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+    .tabs { display: flex; gap: 4px; background: var(--surf2); border-radius: 20px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 1 0 auto; height: 34px; padding: 0 12px; border-radius: 17px; font-size: 13.5px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+    .tab small { font-weight: 500; opacity: 0.7; margin-left: 4px; }
+    .tab.on { background: var(--surf); color: var(--text); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); }
+    .tools { display: flex; gap: 8px; }
+    .tools .field { flex: 1; min-width: 0; background: var(--surf2); height: 40px; }
+    .fbtn { height: 40px; padding: 0 14px; border-radius: 20px; background: var(--surf2); font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; }
+    .fbtn .n { min-width: 19px; height: 19px; border-radius: 10px; background: var(--accent); color: var(--ink); font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .panel { display: none; flex-direction: column; gap: 10px; background: var(--surf2); border-radius: var(--r-md); padding: 12px; }
+    .panel.open { display: flex; }
+    .selects { display: flex; flex-wrap: wrap; gap: 6px; }
+    select.field { appearance: none; -webkit-appearance: none; padding-right: 30px; font-weight: 600; font-size: 13px; cursor: pointer; background: var(--surf3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23B5A2A2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; }
+    select.field option { background: var(--surf); }
+    .reset { align-self: flex-start; font-size: 13px; font-weight: 600; color: var(--text3); }
+    .reset:hover { color: var(--text); }
 
-    .carousel-wrapper { position: relative; width: 100%; display: flex; align-items: center; }
-    .carousel { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; width: 100%; scroll-behavior: smooth; }
-    .carousel::-webkit-scrollbar { height: 4px; }
-    .carousel::-webkit-scrollbar-thumb { background: var(--surf3); border-radius: 4px; }
-    .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; background: var(--surf2); border: 0; color: var(--text); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; font-size: 12px; }
-    .carousel-arrow.visible { opacity: 1; pointer-events: auto; }
-    .carousel-arrow:hover { background: var(--accent); color: var(--ink); }
-    .carousel-arrow.left { left: -6px; }
-    .carousel-arrow.right { right: -6px; }
-
-    .item-card { flex: 0 0 104px; width: 104px; min-width: 0; height: 124px; background: var(--tile); border-radius: var(--radius-md); padding: 8px 6px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; scroll-snap-align: start; border: 2.5px solid transparent; }
-    .item-card:hover { background: var(--tile-sel); }
-    .item-card.selected { border-color: var(--accent); background: var(--tile-sel); box-shadow: 0 0 0 3px rgba(231, 169, 162, 0.25); }
-    .item-card.in-wash { opacity: 0.45; }
-    .item-card img { width: 72px; height: 72px; object-fit: contain; }
-    .item-card span { font-size: 11.5px; font-weight: 600; color: var(--ink); margin-top: 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-    .carousel > span { color: var(--text3) !important; font-size: 13px !important; }
+    .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
+    .item { position: relative; height: 140px; border-radius: var(--r-md); background: var(--tile); padding: 10px 8px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 2.5px solid transparent; text-align: center; }
+    .item:hover { background: var(--tile2); }
+    .item.on { border-color: var(--accent); background: var(--tile2); box-shadow: 0 0 0 3px rgba(231, 169, 162, 0.25); }
+    .item.wash { opacity: 0.45; }
+    .item img { width: 82px; height: 82px; object-fit: contain; }
+    .item .nm { font-size: 11.5px; font-weight: 600; color: var(--ink); width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .w { position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border-radius: 14px; background: rgba(42, 31, 35, 0.08); color: #9C8073; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0; }
+    .item:hover .w, .item.wash .w { opacity: 1; }
+    .item .w:hover { background: rgba(42, 31, 35, 0.16); color: var(--ink); }
+    .item.wash .w { background: var(--accent); color: var(--ink); }
+    @media (hover: none) { .item .w { opacity: 1; } }
+    .none { grid-column: 1 / -1; padding: 22px 6px; text-align: center; font-size: 14px; color: var(--text3); }
   </style>
 </head>
 <body>
-
-  <div class="container">
-    <div class="header-row">
-      <h1>wardrobe</h1>
-      <button class="btn-clear-all" onclick="clearAllOutfit()">clear outfit</button>
+  <div class="wrap">
+    <div class="top">
+      <div><h1>wardrobe</h1><div class="sub" id="weather">&nbsp;</div></div>
+      <button class="round" onclick="clearAll()"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>clear</button>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-      <div class="search-row">
-        <input type="text" class="search-input" id="search-box" placeholder="search items..." oninput="debouncedApplyFilters()" />
-
-        <select class="dropdown-select" id="colour-select" onchange="applyFilters()">
-          <option value="">all colours</option>
-        </select>
-
-        <select class="dropdown-select" id="brand-select" onchange="applyFilters()">
-          <option value="">all brands</option>
-          <option value="shein">shein</option>
-          <option value="primark">primark</option>
-          <option value="plt">plt</option>
-          <option value="hollister">hollister</option>
-          <option value="victoria secret">victoria secret</option>
-          <option value="other">other</option>
-        </select>
-
-        <select class="dropdown-select" id="fit-select" onchange="applyFilters()">
-          <option value="">all fits</option>
-          <option value="tight">tight</option>
-          <option value="baggy">baggy</option>
-        </select>
-      </div>
-
-      <div class="tag-filters">
-        <div class="filter-chip" onclick="toggleTagFilter('comfy', this)">comfy</div>
-        <div class="filter-chip" onclick="toggleTagFilter('winter', this)">winter</div>
-        <div class="filter-chip" onclick="toggleTagFilter('loungewear', this)">loungewear</div>
-        <div class="filter-chip" onclick="toggleTagFilter('club', this)">club</div>
-        <div class="filter-chip" onclick="toggleTagFilter('new', this)">new</div>
-        <div class="filter-chip" onclick="toggleTagFilter('matching set', this)">matching set</div>
-        <div class="filter-chip" onclick="toggleInWash(this)">in the wash too</div>
-        <div id="dynamic-tag-chips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
-      </div>
+    <div id="recent-wrap" style="display:none; flex-direction:column; gap:8px">
+      <span class="label">wear again</span>
+      <div class="recent" id="recent"></div>
     </div>
 
-    <div class="dashboard-grid">
-      <!-- Preview Canvas & Custom Save Controls -->
-      <div class="preview-card">
-        <div class="category-title">outfit preview</div>
-        <div class="outfit-display-canvas">
-          <canvas id="outfit-canvas" width="300" height="330"></canvas>
+    <div class="grid">
+      <!-- the outfit -->
+      <div class="card preview">
+        <span class="label">outfit</span>
+        <div class="stage"><canvas id="outfit-canvas"></canvas><div class="empty" id="empty">tap clothes to build an outfit</div></div>
+        <div class="slots" id="slots"></div>
+        <div class="actions">
+          <button class="round" onclick="shuffle()"><svg class="i" viewBox="0 0 24 24"><path d="M16 4h4v4M4 20l16-16M20 16v4h-4M15 15l5 5M4 4l5 5"/></svg>shuffle</button>
         </div>
 
-        <div class="controls-panel">
-          <div class="control-item">
-            <span>date</span>
-            <input type="date" id="outfit-date-picker" class="dropdown-select" style="padding: 4px 8px; font-size: 0.8rem;" />
-          </div>
-
-          <div class="control-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-            <span style="font-size: 0.8rem; color: var(--subtext);">outfit name / occasion</span>
-            <input type="text" id="outfit-name-input" class="search-input" placeholder="e.g. uni outfit, clubbing, loungewear, pjs" style="width: 100%; padding: 6px 12px; font-size: 0.8rem;" />
-            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px;">
-              <span class="filter-chip" onclick="quickSetName('uni outfit')" style="padding: 2px 8px; font-size: 0.7rem;">uni outfit</span>
-              <span class="filter-chip" onclick="quickSetName('club')" style="padding: 2px 8px; font-size: 0.7rem;">club</span>
-              <span class="filter-chip" onclick="quickSetName('loungewear')" style="padding: 2px 8px; font-size: 0.7rem;">loungewear</span>
-              <span class="filter-chip" onclick="quickSetName('pjs')" style="padding: 2px 8px; font-size: 0.7rem;">pjs</span>
-            </div>
-          </div>
-
-          <div class="control-item">
-            <span>push-up bra</span>
-            <label class="switch">
-              <input type="checkbox" id="bra-switch">
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="control-item">
-            <span>tights</span>
-            <label class="switch">
-              <input type="checkbox" id="tights-switch">
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <button class="btn-sync" onclick="saveOutfit()">save outfit to notion</button>
       </div>
 
-      <div class="carousel-section">
-        <!-- TOPS -->
-        <div class="category-group">
-          <div class="category-header">
-            <span class="category-title">tops</span>
-            <button class="btn-clear-cat" onclick="clearCategory('top')">clear</button>
+      <!-- saving -->
+      <div class="card savebox">
+        <div class="details">
+            <div class="row"><span>date</span><input type="date" id="date" class="field" style="width:auto" /></div>
+            <input type="text" id="name" class="field" placeholder="name or occasion (uni outfit, club…)" />
+            <div class="chips" id="name-chips"></div>
+            <div class="row"><span>push-up bra</span><label class="switch"><input type="checkbox" id="bra"><span></span></label></div>
+            <div class="row"><span>tights</span><label class="switch"><input type="checkbox" id="tights"><span></span></label></div>
           </div>
-          <div class="category-filters-row">
-            <select class="dropdown-select" id="top-type-select" onchange="applyFilters()">
-              <option value="">all top types</option>
-              <option value="sweater">sweater</option>
-              <option value="hoodie">hoodie</option>
-              <option value="shirt">shirt</option>
-              <option value="top">top</option>
-            </select>
-            <select class="dropdown-select" id="top-crop-select" onchange="applyFilters()">
-              <option value="">all crops</option>
-              <option value="cropped">cropped</option>
-              <option value="extra cropped">extra cropped</option>
-              <option value="not cropped">not cropped</option>
-            </select>
-            <select class="dropdown-select" id="top-sleeve-select" onchange="applyFilters()">
-              <option value="">all sleeves</option>
-              <option value="long-sleeved">long-sleeved</option>
-              <option value="short-sleeved">short-sleeved</option>
-              <option value="no sleeves">no sleeves</option>
-            </select>
-            <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-arrow left" id="arrow-left-top" onclick="scrollCarousel('top', -200)">&#10094;</button>
-            <div class="carousel" id="carousel-top" onscroll="checkCarouselArrows('top')"></div>
-            <button class="carousel-arrow right" id="arrow-right-top" onclick="scrollCarousel('top', 200)">&#10095;</button>
-          </div>
-        </div>
+          <button class="save" id="save" onclick="saveOutfit()">save outfit to notion</button>
+          <div class="toast" id="toast"></div>
+      </div>
 
-        <!-- BOTTOMS -->
-        <div class="category-group">
-          <div class="category-header">
-            <span class="category-title">bottoms</span>
-            <button class="btn-clear-cat" onclick="clearCategory('bottom')">clear</button>
-          </div>
-          <div class="category-filters-row">
-            <select class="dropdown-select" id="bottom-type-select" onchange="applyFilters()">
-              <option value="">all bottom types</option>
-              <option value="joggers">joggers</option>
-              <option value="jeans">jeans</option>
-              <option value="skirt">skirt</option>
-              <option value="shorts">shorts</option>
-            </select>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-arrow left" id="arrow-left-bottom" onclick="scrollCarousel('bottom', -200)">&#10094;</button>
-            <div class="carousel" id="carousel-bottom" onscroll="checkCarouselArrows('bottom')"></div>
-            <button class="carousel-arrow right" id="arrow-right-bottom" onclick="scrollCarousel('bottom', 200)">&#10095;</button>
-          </div>
+      <!-- your clothes -->
+      <div class="card closet">
+        <div class="tabs" id="tabs"></div>
+        <div class="tools">
+          <input class="field" id="search" placeholder="search" oninput="draw()" />
+          <button class="fbtn" onclick="togglePanel()"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>filters<span class="n" id="fcount" style="display:none"></span></button>
         </div>
-
-        <!-- DRESSES -->
-        <div class="category-group">
-          <div class="category-header">
-            <span class="category-title">dresses</span>
-            <button class="btn-clear-cat" onclick="clearCategory('dresses')">clear</button>
-          </div>
-          <div class="category-filters-row">
-            <select class="dropdown-select" id="dress-length-select" onchange="applyFilters()">
-              <option value="">all lengths</option>
-              <option value="maxi">maxi</option>
-              <option value="mini">mini</option>
-              <option value="midi">midi</option>
-            </select>
-            <select class="dropdown-select" id="dress-sleeve-select" onchange="applyFilters()">
-              <option value="">all sleeves</option>
-              <option value="long-sleeved">long-sleeved</option>
-              <option value="short-sleeved">short-sleeved</option>
-              <option value="no sleeves">no sleeves</option>
-            </select>
-            <div class="filter-chip" onclick="toggleTagFilter('booby', this)">booby</div>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-arrow left" id="arrow-left-dresses" onclick="scrollCarousel('dresses', -200)">&#10094;</button>
-            <div class="carousel" id="carousel-dresses" onscroll="checkCarouselArrows('dresses')"></div>
-            <button class="carousel-arrow right" id="arrow-right-dresses" onclick="scrollCarousel('dresses', 200)">&#10095;</button>
-          </div>
+        <div class="panel" id="panel">
+          <div class="selects" id="selects"></div>
+          <div class="chips" id="tag-chips"></div>
+          <button class="reset" onclick="resetFilters()">reset filters</button>
         </div>
-
-        <!-- SHOES -->
-        <div class="category-group">
-          <div class="category-header">
-            <span class="category-title">shoes</span>
-            <button class="btn-clear-cat" onclick="clearCategory('shoes')">clear</button>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-arrow left" id="arrow-left-shoes" onclick="scrollCarousel('shoes', -200)">&#10094;</button>
-            <div class="carousel" id="carousel-shoes" onscroll="checkCarouselArrows('shoes')"></div>
-            <button class="carousel-arrow right" id="arrow-right-shoes" onclick="scrollCarousel('shoes', 200)">&#10095;</button>
-          </div>
-        </div>
-
-        <!-- OUTERWEAR -->
-        <div class="category-group">
-          <div class="category-header">
-            <span class="category-title">outerwear</span>
-            <button class="btn-clear-cat" onclick="clearCategory('outerwear')">clear</button>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-arrow left" id="arrow-left-outerwear" onclick="scrollCarousel('outerwear', -200)">&#10094;</button>
-            <div class="carousel" id="carousel-outerwear" onscroll="checkCarouselArrows('outerwear')"></div>
-            <button class="carousel-arrow right" id="arrow-right-outerwear" onclick="scrollCarousel('outerwear', 200)">&#10095;</button>
-          </div>
-        </div>
-
+        <div class="items" id="items"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // your keys are NOT in this page any more: they live in the Cloudflare worker as secrets
+    // your keys live in the Cloudflare worker, never in this page
     const WORKER_URL = "https://wardrobe-proxy.jaswalia234.workers.dev";
     const PERSON_IMAGE_URL = "images/person.png";
 
-    let wardrobeItems = [];
-    let activeTags = new Set();
-    let showInWash = false;
-    let selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
-    let filterDebounceTimer = null;
-    let imageCache = {};
+    const TABS = [["top", "tops"], ["bottom", "bottoms"], ["dresses", "dresses"], ["shoes", "shoes"], ["outerwear", "layers"]];
+    const SLOT_NAME = { top: "top", bottom: "bottoms", dresses: "dress", shoes: "shoes", outerwear: "layer" };
+    const BRANDS = ["shein", "primark", "plt", "hollister", "victoria secret"];
+    const TAB_FILTERS = {
+      top: [["type", "all types", ["sweater", "hoodie", "shirt", "top"]], ["crop", "all crops", ["cropped", "extra cropped", "not cropped"]], ["sleeve", "all sleeves", ["long-sleeved", "short-sleeved", "no sleeves"]]],
+      bottom: [["type", "all types", ["joggers", "jeans", "skirt", "shorts"]]],
+      dresses: [["length", "all lengths", ["maxi", "mini", "midi"]], ["sleeve", "all sleeves", ["long-sleeved", "short-sleeved", "no sleeves"]]],
+      shoes: [], outerwear: []
+    };
+    const TAGS = ["comfy", "winter", "loungewear", "club", "new", "matching set", "booby"];
+    const HIDE_TAGS = new Set(TAGS.concat(BRANDS, ["other", "tight", "baggy", "maxi", "mini", "midi", "cropped", "extra cropped", "not cropped", "long-sleeved", "short-sleeved", "no sleeves", "sweater", "hoodie", "shirt", "top", "joggers", "jeans", "skirt", "shorts", "layer", "can layer"]));
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const datePicker = document.getElementById('outfit-date-picker');
-      if (datePicker) {
-        const d = new Date();
-        datePicker.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      }
-    });
+    let items = [], recent = [], tab = "top", panelOpen = false, weather = null;
+    let F = { colour: "", brand: "", fit: "", sub: {}, tags: new Set(), wash: false };
+    let sel = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+    const imageCache = {};
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const inWash = (it) => /dirty|wash|laundry|worn/.test(it.status || "");
+    const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
-    function quickSetName(name) {
-      document.getElementById('outfit-name-input').value = name;
-    }
-
-    function getOrdinalSuffix(day) {
-      if (day > 3 && day < 21) return 'th';
-      switch (day % 10) {
-        case 1:  return "st";
-        case 2:  return "nd";
-        case 3:  return "rd";
-        default: return "th";
-      }
-    }
-
-    function formatCustomDateString(dateObj) {
-      const dayName = dateObj.toLocaleDateString('en-GB', { weekday: 'long' }).toLowerCase();
-      const monthName = dateObj.toLocaleDateString('en-GB', { month: 'long' }).toLowerCase();
-      const dayNum = dateObj.getDate();
-      return `${dayName} ${dayNum}${getOrdinalSuffix(dayNum)} ${monthName}`;
-    }
-
-    function getColorWeight(colorName) {
-      const c = colorName.toLowerCase();
-      if (c.includes('white') || c.includes('cream') || c.includes('ivory') || c.includes('nude')) return 10;
-      if (c.includes('pink') || c.includes('rose') || c.includes('blush')) return 20;
-      if (c.includes('red') || c.includes('burgundy') || c.includes('maroon') || c.includes('wine')) return 30;
-      if (c.includes('orange') || c.includes('rust') || c.includes('peach')) return 40;
-      if (c.includes('yellow') || c.includes('gold') || c.includes('mustard')) return 50;
-      if (c.includes('sage') || c.includes('mint') || c.includes('light green')) return 60;
-      if (c.includes('green') || c.includes('khaki') || c.includes('olive') || c.includes('emerald') || c.includes('dark green')) return 70;
-      if (c.includes('light blue') || c.includes('sky') || c.includes('baby blue')) return 80;
-      if (c.includes('blue') || c.includes('denim') || c.includes('cobalt') || c.includes('royal')) return 85;
-      if (c.includes('navy') || c.includes('dark blue')) return 88;
-      if (c.includes('lilac') || c.includes('lavender') || c.includes('purple') || c.includes('violet') || c.includes('plum')) return 90;
-      if (c.includes('beige') || c.includes('tan') || c.includes('camel') || c.includes('brown') || c.includes('chocolate')) return 100;
-      if (c.includes('light grey') || c.includes('silver')) return 110;
-      if (c.includes('grey') || c.includes('gray') || c.includes('charcoal')) return 115;
-      if (c.includes('black')) return 120;
-      return 200;
-    }
-
-    // one jumper saved as both "top" and "outerwear" becomes ONE item that shows in both rows
-    function tidyItems(items) {
-      const byName = {};
-      const out = [];
-      items.forEach((it) => {
-        const key = it.name;
-        if (byName[key] && ((byName[key].category === 'top' && it.category === 'outerwear') || (byName[key].category === 'outerwear' && it.category === 'top'))) {
-          const keep = byName[key].category === 'top' ? byName[key] : it;
-          const other = keep === it ? byName[key] : it;
-          keep.layer = true;
-          if (!keep.url) keep.url = other.url;
-          if (keep !== byName[key]) { out[out.indexOf(byName[key])] = keep; byName[key] = keep; }
+    // one jumper saved as both "top" and "outerwear" becomes ONE item that shows under both
+    function tidyItems(list) {
+      const byName = {}, out = [];
+      list.forEach((it) => {
+        const prev = byName[it.name];
+        if (prev && ((prev.category === "top" && it.category === "outerwear") || (prev.category === "outerwear" && it.category === "top"))) {
+          const keep = prev.category === "top" ? prev : it, other = keep === it ? prev : it;
+          keep.layer = true; if (!keep.url) keep.url = other.url; keep.alt = other.id;
+          if (keep !== prev) { out[out.indexOf(prev)] = keep; byName[it.name] = keep; }
           return;
         }
-        if (it.tags.includes('layer') || it.tags.includes('can layer')) it.layer = true;
-        byName[key] = it;
-        out.push(it);
+        if (it.tags.includes("layer") || it.tags.includes("can layer")) it.layer = true;
+        byName[it.name] = it; out.push(it);
       });
       return out;
     }
+    const inTab = (it, t) => it.category === t || (t === "outerwear" && it.layer);
 
-    const inWash = (it) => /dirty|wash|laundry|worn/.test(it.status || "");
+    // ---------- filters ----------
+    function matches(it, t, ignoreWash) {
+      const q = $("search").value.toLowerCase().trim();
+      if (!ignoreWash && !F.wash && inWash(it)) return false;
+      if (q && !it.name.includes(q)) return false;
+      if (F.colour && !it.colors.includes(F.colour)) return false;
+      if (F.brand) { if (F.brand === "other" ? it.tags.some((x) => BRANDS.includes(x)) : !it.tags.includes(F.brand)) return false; }
+      if (F.fit && !it.tags.includes(F.fit)) return false;
+      for (const x of F.tags) if (!it.tags.includes(x)) return false;
+      for (const k in F.sub) { const [cat, val] = [k.split(":")[0], F.sub[k]]; if (val && cat === t && !it.tags.includes(val)) return false; }
+      return true;
+    }
+    const filterCount = () => [F.colour, F.brand, F.fit, F.wash].filter(Boolean).length + F.tags.size + Object.keys(F.sub).filter((k) => F.sub[k] && k.startsWith(tab + ":")).length;
+    function togglePanel() { panelOpen = !panelOpen; draw(); }
+    function resetFilters() { F = { colour: "", brand: "", fit: "", sub: {}, tags: new Set(), wash: false }; $("search").value = ""; draw(); }
+    function setF(key, v) { F[key] = v; draw(); }
+    function setSub(k, v) { F.sub[k] = v; draw(); }
+    function toggleTag(t) { F.tags.has(t) ? F.tags.delete(t) : F.tags.add(t); draw(); }
 
-    function showEverything() {
-      populateColourDropdown();
-      buildDynamicTagChips();
-      applyFilters();
-      drawOutfitCanvas();
+    function drawPanel() {
+      const colours = Array.from(new Set(items.flatMap((i) => i.colors))).sort();
+      const sel_ = (val, onch, first, opts) => `<select class="field" onchange="${onch}"><option value="">${first}</option>${opts.map((o) => `<option value="${esc(o)}"${o === val ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+      $("selects").innerHTML =
+        sel_(F.colour, "setF('colour', this.value)", "all colours", colours) +
+        sel_(F.brand, "setF('brand', this.value)", "all brands", BRANDS.concat(["other"])) +
+        sel_(F.fit, "setF('fit', this.value)", "all fits", ["tight", "baggy"]) +
+        TAB_FILTERS[tab].map(([k, first, opts]) => sel_(F.sub[`${tab}:${k}`] || "", `setSub('${tab}:${k}', this.value)`, first, opts)).join("");
+      const extra = Array.from(new Set(items.flatMap((i) => i.tags))).filter((t) => !HIDE_TAGS.has(t)).sort();
+      $("tag-chips").innerHTML = TAGS.concat(extra).map((t) => `<button class="chip${F.tags.has(t) ? " on" : ""}" onclick="toggleTag('${esc(t)}')">${esc(t)}</button>`).join("") +
+        `<button class="chip${F.wash ? " on" : ""}" onclick="setF('wash', !F.wash)">in the wash too</button>`;
+      $("panel").classList.toggle("open", panelOpen);
+      const n = filterCount(); $("fcount").style.display = n ? "inline-flex" : "none"; $("fcount").textContent = n;
     }
 
-    async function fetchFromNotion() {
-      // 1. instant load from the last time
-      const cachedData = localStorage.getItem('cached_wardrobe_items_v2');
-      if (cachedData) {
-        try {
-          wardrobeItems = JSON.parse(cachedData);
-          showEverything();
-          preloadInitialImages();
-        } catch (e) { console.error("cache read error", e); }
-      }
-      // 2. fresh from Notion (through the worker, which holds the key)
+    // ---------- drawing the page ----------
+    function draw() {
+      $("tabs").innerHTML = TABS.map(([k, nm]) => `<button class="tab${k === tab ? " on" : ""}" onclick="tab='${k}'; draw()">${nm}<small>${items.filter((i) => inTab(i, k) && !inWash(i)).length}</small></button>`).join("");
+      drawPanel();
+      const list = items.filter((i) => inTab(i, tab) && matches(i, tab)).sort((a, b) => (inWash(a) - inWash(b)) || a.name.localeCompare(b.name));
+      $("items").innerHTML = list.length ? list.map((it) => `
+        <div class="item${sel[tab] && sel[tab].id === it.id ? " on" : ""}${inWash(it) ? " wash" : ""}" onclick="pick('${it.id}')" role="button">
+          ${it.url ? `<img src="${esc(it.url)}" alt="" loading="lazy" decoding="async" crossorigin="anonymous" />` : ""}
+          <span class="nm">${esc(it.name)}</span>
+          <button class="w" title="${inWash(it) ? "it's clean" : "in the wash"}" onclick="event.stopPropagation(); wash('${it.id}')"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7zM4 8l2-4h12l2 4M9 13c1 1 2 1 3 0s2-1 3 0"/></svg></button>
+        </div>`).join("") : `<div class="none">no ${TABS.find((t) => t[0] === tab)[1]} here${filterCount() ? " with these filters" : ""}</div>`;
+      drawSlots(); drawCanvas();
+    }
+
+    function drawSlots() {
+      const order = sel.dresses ? ["dresses", "shoes", "outerwear"] : ["top", "bottom", "shoes", "outerwear"];
+      $("slots").innerHTML = order.map((k) => sel[k]
+        ? `<button class="slot on" onclick="sel['${k}']=null; draw()">${SLOT_NAME[k]} <b>${esc(sel[k].name)}</b><span class="x">✕</span></button>`
+        : `<button class="slot" onclick="tab='${k}'; draw()">+ ${SLOT_NAME[k]}</button>`).join("");
+      $("empty").style.display = Object.values(sel).some(Boolean) ? "none" : "flex";
+    }
+
+    function pick(id) {
+      const it = items.find((i) => i.id === id); if (!it) return;
+      const slot = tab;
+      if (sel[slot] && sel[slot].id === id) { sel[slot] = null; draw(); return; }
+      if (slot === "dresses") { sel.top = null; sel.bottom = null; }
+      if (slot === "top" || slot === "bottom") sel.dresses = null;
+      if (slot === "outerwear" && sel.top && sel.top.id === id) sel.top = null;
+      if (slot === "top" && sel.outerwear && sel.outerwear.id === id) sel.outerwear = null;
+      sel[slot] = it; draw();
+    }
+    function clearAll() { sel = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null }; draw(); }
+
+    // a whole outfit from your clean clothes (with the filters you've got on)
+    function shuffle() {
+      const pool = (t) => items.filter((i) => inTab(i, t) && !inWash(i) && matches(i, t, false));
+      const one = (l) => l[Math.floor(Math.random() * l.length)] || null;
+      const dresses = pool("dresses"), useDress = dresses.length && Math.random() < 0.2;
+      const next = { top: null, bottom: null, dresses: null, shoes: one(pool("shoes")), outerwear: null };
+      if (useDress) next.dresses = one(dresses); else { next.top = one(pool("top")); next.bottom = one(pool("bottom")); }
+      const cold = weather && weather.temp < 14;
+      if (cold) next.outerwear = one(pool("outerwear").filter((i) => !next.top || i.id !== next.top.id));
+      sel = next; draw();
+    }
+
+    // clean ⇄ in the wash (saved to Notion)
+    async function wash(id) {
+      const it = items.find((i) => i.id === id); if (!it) return;
+      const toWash = !inWash(it);
+      it.status = toWash ? "dirty" : "clean";
+      if (toWash) Object.keys(sel).forEach((k) => { if (sel[k] && sel[k].id === id) sel[k] = null; });
+      localStorage.setItem("wardrobe_v3", JSON.stringify(items)); draw();
+      toast(toWash ? `${it.name} is in the wash` : `${it.name} is clean`);
       try {
-        const response = await fetch(`${WORKER_URL}/wardrobe`);
-        const data = await response.json();
-        if (!response.ok || !Array.isArray(data)) { console.error("wardrobe error:", data); return; }
-        wardrobeItems = tidyItems(data);
-        localStorage.setItem('cached_wardrobe_items_v2', JSON.stringify(wardrobeItems));
-        localStorage.removeItem('cached_wardrobe_items');
-        showEverything();
-      } catch (err) {
-        console.error("error fetching wardrobe:", err);
-      }
+        await Promise.all([id].concat(it.alt ? [it.alt] : []).map((x) => fetch(`${WORKER_URL}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: x, wash: toWash }) })));
+      } catch (e) { toast("couldn't save that to notion"); }
     }
 
-    function preloadInitialImages() {
-      ['top', 'bottom', 'dresses', 'shoes', 'outerwear'].forEach(cat => {
-        wardrobeItems.filter(i => i.category === cat).slice(0, 3).forEach(item => { if (item.url) loadImage(item.url); });
-      });
-    }
-
-    function populateColourDropdown() {
-      const allColours = new Set();
-      wardrobeItems.forEach(item => item.colors.forEach(c => allColours.add(c)));
-      const sortedColours = Array.from(allColours).sort((a, b) => {
-        const wa = getColorWeight(a), wb = getColorWeight(b);
-        return wa === wb ? a.localeCompare(b) : wa - wb;
-      });
-      const select = document.getElementById("colour-select");
-      const current = select.value;
-      select.innerHTML = '<option value="">all colours</option>' + sortedColours.map(c => `<option value="${c}">${c}</option>`).join('');
-      select.value = current;
-    }
-
-    function buildDynamicTagChips() {
-      const excludedOptionTags = new Set([
-        'comfy', 'winter', 'loungewear', 'club', 'new', 'matching set', 'booby', 'layer', 'can layer',
-        'shein', 'primark', 'plt', 'hollister', 'victoria secret', 'other',
-        'tight', 'baggy', 'maxi', 'mini', 'midi', 'cropped', 'extra cropped', 'not cropped',
-        'long-sleeved', 'short-sleeved', 'no sleeves', 'sweater', 'hoodie', 'shirt', 'top',
-        'joggers', 'jeans', 'skirt', 'shorts'
-      ]);
-      const dynamicTags = new Set();
-      wardrobeItems.forEach(item => item.tags.forEach(t => { if (!excludedOptionTags.has(t)) dynamicTags.add(t); }));
-      document.getElementById("dynamic-tag-chips").innerHTML = Array.from(dynamicTags).map(tag => `
-        <div class="filter-chip${activeTags.has(tag) ? ' active' : ''}" onclick="toggleTagFilter('${tag}', this)">${tag}</div>
-      `).join('');
-    }
-
-    function toggleTagFilter(tag, element) {
-      if (activeTags.has(tag)) { activeTags.delete(tag); element.classList.remove("active"); }
-      else { activeTags.add(tag); element.classList.add("active"); }
-      applyFilters();
-    }
-
-    function toggleInWash(element) {
-      showInWash = !showInWash;
-      element.classList.toggle("active", showInWash);
-      applyFilters();
-    }
-
-    function debouncedApplyFilters() {
-      clearTimeout(filterDebounceTimer);
-      filterDebounceTimer = setTimeout(applyFilters, 100);
-    }
-
-    function applyFilters() {
-      const v = (id) => document.getElementById(id).value.toLowerCase();
-      const searchQuery = v("search-box").trim(), selectedColour = v("colour-select"), selectedBrand = v("brand-select"), selectedFit = v("fit-select");
-      const topType = v("top-type-select"), topCrop = v("top-crop-select"), topSleeve = v("top-sleeve-select");
-      const bottomType = v("bottom-type-select"), dressLength = v("dress-length-select"), dressSleeve = v("dress-sleeve-select");
-      const knownBrands = ['shein', 'primark', 'plt', 'hollister', 'victoria secret'];
-
-      const filtered = wardrobeItems.filter(item => {
-        if (!showInWash && inWash(item)) return false;
-        const matchesSearch = !searchQuery || item.name.includes(searchQuery);
-        const matchesColour = !selectedColour || item.colors.includes(selectedColour);
-        let matchesBrand = true;
-        if (selectedBrand) matchesBrand = selectedBrand === 'other' ? !item.tags.some(t => knownBrands.includes(t)) : item.tags.includes(selectedBrand);
-        const matchesFit = !selectedFit || item.tags.includes(selectedFit);
-        const matchesTags = activeTags.size === 0 || Array.from(activeTags).every(t => item.tags.includes(t));
-        let ok = true;
-        if (item.category === 'top') {
-          if (topType && !item.tags.includes(topType)) ok = false;
-          if (topCrop && !item.tags.includes(topCrop)) ok = false;
-          if (topSleeve && !item.tags.includes(topSleeve)) ok = false;
-        } else if (item.category === 'bottom') {
-          if (bottomType && !item.tags.includes(bottomType)) ok = false;
-        } else if (item.category === 'dresses') {
-          if (dressLength && !item.tags.includes(dressLength)) ok = false;
-          if (dressSleeve && !item.tags.includes(dressSleeve)) ok = false;
-        }
-        return matchesSearch && matchesColour && matchesBrand && matchesFit && matchesTags && ok;
-      });
-      renderCarousels(filtered);
-    }
-
-    const NICE = { top: "tops", bottom: "bottoms", dresses: "dresses", shoes: "shoes", outerwear: "outerwear" };
-    function renderCarousels(items) {
-      ['top', 'bottom', 'dresses', 'shoes', 'outerwear'].forEach(cat => {
-        const container = document.getElementById(`carousel-${cat}`);
-        if (!container) return;
-        // jumpers that can be worn as a layer show up under outerwear too
-        const catItems = items.filter(i => i.category === cat || (cat === 'outerwear' && i.layer));
-        if (catItems.length === 0) {
-          container.innerHTML = `<span style="font-size:0.75rem; color:var(--subtext); padding:6px;">no matching ${NICE[cat]}</span>`;
-        } else {
-          container.innerHTML = catItems.map(item => `
-            <div class="item-card ${selectedOutfit[cat]?.id === item.id ? 'selected' : ''}${inWash(item) ? ' in-wash' : ''}"
-                 onclick="selectItem('${cat}', '${item.id}', this)">
-              <img src="${item.url}" alt="${item.name}" loading="lazy" decoding="async" crossorigin="anonymous" />
-              <span>${item.name}</span>
-            </div>
-          `).join('');
-        }
-        setTimeout(() => checkCarouselArrows(cat), 30);
-      });
-    }
-
-    function scrollCarousel(cat, offset) {
-      const container = document.getElementById(`carousel-${cat}`);
-      if (container) container.scrollBy({ left: offset, behavior: 'smooth' });
-    }
-
-    function checkCarouselArrows(cat) {
-      const container = document.getElementById(`carousel-${cat}`);
-      const leftArrow = document.getElementById(`arrow-left-${cat}`);
-      const rightArrow = document.getElementById(`arrow-right-${cat}`);
-      if (!container || !leftArrow || !rightArrow) return;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      leftArrow.classList.toggle("visible", container.scrollLeft > 5);
-      rightArrow.classList.toggle("visible", container.scrollLeft < maxScroll - 5 && maxScroll > 0);
-    }
-
-    function selectItem(category, itemId) {
-      const item = wardrobeItems.find(i => i.id === itemId);
-      if (!item) return;
-      // tapping the selected item again takes it off
-      if (selectedOutfit[category]?.id === itemId) { selectedOutfit[category] = null; applyFilters(); drawOutfitCanvas(); return; }
-      if (category === 'dresses') { selectedOutfit.top = null; selectedOutfit.bottom = null; }
-      else if (category === 'top' || category === 'bottom') selectedOutfit.dresses = null;
-      // the same jumper can't be the top and the layer at once
-      if (category === 'outerwear' && selectedOutfit.top?.id === itemId) selectedOutfit.top = null;
-      if (category === 'top' && selectedOutfit.outerwear?.id === itemId) selectedOutfit.outerwear = null;
-      selectedOutfit[category] = item;
-      applyFilters();
-      drawOutfitCanvas();
-    }
-
-    function clearCategory(category) { selectedOutfit[category] = null; applyFilters(); drawOutfitCanvas(); }
-
-    function clearAllOutfit() {
-      selectedOutfit = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
-      applyFilters();
-      drawOutfitCanvas();
-    }
-
+    // ---------- the picture ----------
     function loadImage(url) {
       if (imageCache[url]) return Promise.resolve(imageCache[url]);
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.src = url;
-        img.onload = () => { imageCache[url] = img; resolve(img); };
-        img.onerror = () => resolve(null);
-      });
+      return new Promise((res) => { const img = new Image(); img.crossOrigin = "anonymous"; img.onload = () => { imageCache[url] = img; res(img); }; img.onerror = () => res(null); img.src = url; });
+    }
+    async function drawCanvas() {
+      const canvas = $("outfit-canvas"), ctx = canvas.getContext("2d"), dpr = window.devicePixelRatio || 1, rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr; canvas.height = rect.height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, rect.width, rect.height);
+      const cx = rect.width / 2, top = (rect.height - 330) / 2;
+      const person = await loadImage(PERSON_IMAGE_URL);
+      if (person) ctx.drawImage(person, cx - 70, top + 10, 140, 310);
+      const SPOT = { dresses: [120, 210, 42], top: [110, 110, 45], bottom: [145, 145, 148], shoes: [80, 80, 245], outerwear: [120, 120, 55, true] };
+      const layers = ["dresses", "bottom", "top", "shoes", "outerwear"].filter((k) => sel[k] && sel[k].url);
+      const imgs = await Promise.all(layers.map((k) => loadImage(sel[k].url).then((img) => [k, img])));
+      imgs.forEach(([k, img]) => { if (!img) return; const [w, h, y, right] = SPOT[k]; ctx.drawImage(img, right ? cx + 150 - w - 10 : cx - w / 2, top + y, w, h); });
     }
 
-    async function drawOutfitCanvas() {
-      const canvas = document.getElementById('outfit-canvas');
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      const personImg = await loadImage(PERSON_IMAGE_URL);
-      if (personImg) ctx.drawImage(personImg, (rect.width - 140) / 2, 10, 140, 310);
-
-      const layers = ['dresses', 'bottom', 'top', 'shoes', 'outerwear'];
-      const active = layers.filter(layer => selectedOutfit[layer] && selectedOutfit[layer].url);
-      const loaded = await Promise.all(active.map(layer => loadImage(selectedOutfit[layer].url).then(img => ({ layer, img }))));
-      const SPOT = {
-        dresses: [120, 210, 42, null],
-        top: [110, 110, 45, null],
-        bottom: [145, 145, 148, null],
-        shoes: [80, 80, 245, null],
-        outerwear: [120, 120, 55, "right"]
-      };
-      loaded.forEach(({ layer, img }) => {
-        if (!img) return;
-        const [w, h, y, side] = SPOT[layer];
-        const x = side === "right" ? rect.width - w - 10 : (rect.width - w) / 2;
-        ctx.drawImage(img, x, y, w, h);
+    // ---------- wear again ----------
+    function drawRecent() {
+      const shown = recent.filter((o) => o.image || o.items.length).slice(0, 8);
+      $("recent-wrap").style.display = shown.length ? "flex" : "none";
+      $("recent").innerHTML = shown.map((o, i) => {
+        const pieces = o.items.map((id) => items.find((x) => x.id === id || x.alt === id)).filter(Boolean);
+        const pic = o.image ? `<div class="pic one"><img src="${esc(o.image)}" alt="" /></div>` : `<div class="pic">${pieces.slice(0, 4).map((p) => `<img src="${esc(p.url)}" alt="" />`).join("")}</div>`;
+        const d = o.date ? new Date(o.date + "T12:00:00") : null;
+        return `<button class="fit" onclick="wearAgain(${i})">${pic}<span>${d ? d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toLowerCase() : esc(o.title)}</span></button>`;
+      }).join("");
+    }
+    function wearAgain(i) {
+      const o = recent.filter((x) => x.image || x.items.length)[i]; if (!o) return;
+      const next = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null };
+      o.items.forEach((id) => {
+        const it = items.find((x) => x.id === id || x.alt === id); if (!it) return;
+        const slot = it.category === "outerwear" ? "outerwear" : it.category;
+        if (slot === "top" && next.top && it.layer) next.outerwear = it; else if (next[slot] === null) next[slot] = it;
       });
+      sel = next; draw(); toast("loaded, change anything you like");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    // ---------- saving ----------
+    let toastT;
+    function toast(msg) { $("toast").textContent = msg; clearTimeout(toastT); toastT = setTimeout(() => ($("toast").textContent = ""), 3500); }
+    function nth(d) { return d > 3 && d < 21 ? "th" : ["th", "st", "nd", "rd"][d % 10] || "th"; }
     async function saveOutfit() {
-      const btn = document.querySelector('.btn-sync');
-      const canvas = document.getElementById('outfit-canvas');
-      const customDateVal = document.getElementById('outfit-date-picker').value;
-      const [year, month, day] = customDateVal.split('-');
-      const pageTitle = `${formatCustomDateString(new Date(year, month - 1, day))} - ${document.getElementById('outfit-name-input').value.trim().toLowerCase() || "outfit"}`;
-      const items = Object.values(selectedOutfit).filter(i => i && i.id).map(i => i.id);
-      if (!items.length) { alert("pick at least one thing first"); return; }
-
-      btn.disabled = true; btn.textContent = "saving…";
+      const ids = Object.values(sel).filter(Boolean).map((i) => i.id);
+      if (!ids.length) { toast("pick at least one thing first"); return; }
+      const dv = $("date").value || todayKey(), [y, m, d] = dv.split("-").map(Number), dt = new Date(y, m - 1, d);
+      const title = `${dt.toLocaleDateString("en-GB", { weekday: "long" }).toLowerCase()} ${d}${nth(d)} ${dt.toLocaleDateString("en-GB", { month: "long" }).toLowerCase()} - ${$("name").value.trim().toLowerCase() || "outfit"}`;
+      const btn = $("save"); btn.disabled = true; btn.textContent = "saving…";
       try {
-        const response = await fetch(`${WORKER_URL}/save-outfit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: pageTitle,
-            date: customDateVal,
-            items: Array.from(new Set(items)),
-            bra: document.getElementById('bra-switch').checked ? 'yes' : 'no',
-            tights: document.getElementById('tights-switch').checked ? 'yes' : 'no',
-            imageBase64: canvas.toDataURL('image/png')
-          })
-        });
-        const resData = await response.json();
-        if (response.ok) alert(`saved as "${pageTitle}" to notion!`);
-        else { console.error("save error:", resData); alert(`couldn't save: ${resData.message || 'check console'}`); }
-      } catch (err) {
-        console.error("error saving:", err);
-        alert("network error saving to notion.");
-      } finally {
-        btn.disabled = false; btn.textContent = "save outfit to notion";
-      }
+        const r = await fetch(`${WORKER_URL}/save-outfit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, date: dv, items: Array.from(new Set(ids)), bra: $("bra").checked ? "yes" : "no", tights: $("tights").checked ? "yes" : "no", imageBase64: $("outfit-canvas").toDataURL("image/png") }) });
+        const j = await r.json();
+        if (r.ok) { toast(`saved “${title}” ✓`); loadRecent(); } else toast(`couldn't save: ${j.message || "try again"}`);
+      } catch (e) { toast("no connection, try again"); }
+      btn.disabled = false; btn.textContent = "save outfit to notion";
     }
 
-    fetchFromNotion();
+    // ---------- loading ----------
+    async function loadItems() {
+      try { const c = JSON.parse(localStorage.getItem("wardrobe_v3") || "null"); if (Array.isArray(c)) { items = c; draw(); } } catch (e) {}
+      try {
+        const r = await fetch(`${WORKER_URL}/wardrobe`), data = await r.json();
+        if (!r.ok || !Array.isArray(data)) { if (!items.length) $("items").innerHTML = `<div class="none">couldn't load your clothes${data && data.message ? `: ${esc(data.message)}` : ""}</div>`; return; }
+        items = tidyItems(data);
+        ["top", "bottom", "dresses", "shoes", "outerwear"].forEach((k) => { if (sel[k]) sel[k] = items.find((i) => i.id === sel[k].id) || null; });
+        localStorage.setItem("wardrobe_v3", JSON.stringify(items));
+        localStorage.removeItem("cached_wardrobe_items"); localStorage.removeItem("cached_wardrobe_items_v2");
+        draw(); drawRecent();
+      } catch (e) { if (!items.length) $("items").innerHTML = `<div class="none">no connection</div>`; }
+    }
+    async function loadRecent() {
+      try { const r = await fetch(`${WORKER_URL}/outfits`); const j = await r.json(); if (Array.isArray(j)) { recent = j; drawRecent(); } } catch (e) {}
+    }
+    async function loadWeather() {
+      try {
+        const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=51.5033&longitude=-0.0917&current=temperature_2m,weather_code&daily=temperature_2m_max,precipitation_probability_max&timezone=Europe%2FLondon&forecast_days=1");
+        const j = await r.json(), t = Math.round(j.current.temperature_2m), c = j.current.weather_code, rain = j.daily.precipitation_probability_max[0];
+        const word = c === 0 ? "sunny" : c <= 3 ? "cloudy" : c <= 48 ? "foggy" : c <= 67 ? "rainy" : c <= 77 ? "snowy" : c <= 82 ? "showers" : "stormy";
+        weather = { temp: t };
+        $("weather").textContent = `${t}° · ${word}${rain >= 50 ? " · take an umbrella" : ""}${t < 10 ? " · coat weather" : ""}`;
+      } catch (e) {}
+    }
+
+    $("date").value = todayKey();
+    $("name-chips").innerHTML = ["uni outfit", "going out", "club", "loungewear", "pjs"].map((n) => `<button class="chip" onclick="document.getElementById('name').value='${n}'">${n}</button>`).join("");
+    window.addEventListener("resize", () => drawCanvas());
+    draw(); loadItems(); loadRecent(); loadWeather();
   </script>
 </body>
 </html>
