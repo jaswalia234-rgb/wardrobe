@@ -74,6 +74,9 @@ textarea.field{width:100%;min-height:260px;font:13.5px/1.5 ui-monospace,Menlo,mo
 .prev hr{border:0;border-top:1px solid var(--surf3);margin:12px 0}
 .prev .dia{font-style:italic;color:var(--text2)}
 .prev .pink{color:#C77C93}
+.prev details.tg{margin:6px 0;padding:2px 0 2px 4px}
+.prev details.tg summary{cursor:pointer;font-weight:600}
+.prev details.tg > :not(summary){margin-left:20px}
 .split{display:grid;gap:12px}
 @media (min-width:760px){.split{grid-template-columns:1fr 1fr}}
 a{color:var(--acc)}
@@ -212,15 +215,7 @@ function bar(p) { $("bar").style.display = p == null ? "none" : "block"; $("fill
 function notesPrompt(n, of) {
   return "This is a photo of page " + n + " of " + of + " of my handwritten university lecture notes. Transcribe EXACTLY what I wrote. Do not add, explain, summarise or reword anything; only fix obvious spelling slips or misreads.\n\n" +
   "Reply in EXACTLY this plain-text format (no JSON, no code fences):\nWEEK: the week number if the notes say it, else none\nLECTURE: the lecture's title or topic as the notes name it, else none\nCOURSE: one of " + COURSES.join(", ") + " if the notes clearly belong to one, else none\nUNSURE: words or symbols you weren't sure about, separated by semicolons, else none\nNOTES:\nthe notes, on the following lines\n\n" +
-  "Rules for the NOTES (my Notion style):\n" +
-  "- Main section headings: \"## Heading:\"  · sub-sections: \"### Heading:\"  · smaller sub-points or numbered steps: \"#### 1. Step:\". Headings end with a colon.\n" +
-  "- A definition written as \"Term: explanation\" goes on its own line as \"**Term:** explanation\".\n" +
-  "- Words I underlined, boxed or emphasised: **bold**.\n" +
-  "- Points: \"- point\". Anything indented, or written after an arrow (→ or ↳) under a point, is a nested bullet: two spaces per level, e.g. \"  - sub-point\".\n" +
-  "- ALL maths as LaTeX, never plain text or unicode: inline inside single $...$ (e.g. $\\hat{\\theta}_n$, $H_0$, $\\hat{\\beta}_1$, $\\frac{1}{n}\\sum_{i=1}^{n}\\hat{u}_i=0$, $(X'X)^{-1}X'y$). Equations or derivations on their own line: one per line as $$...$$, in my order.\n" +
-  "- A line I drew across the page: \"---\".\n" +
-  "- Worked examples: keep exactly, with every number and symbol as maths.\n" +
-  "- Drawings, graphs or diagrams: \"[diagram: what it shows]\".\n" +
+  "Rules for the NOTES: copy line by line, exactly as written, keeping each line on its own line, my arrows (→ ↳), indents and EXAMPLES: labels. Headings or titles I wrote can start with ##. Write maths as LaTeX in $...$ where you can (e.g. $\\hat{\\beta}_1$, $H_0$, $\\frac{1}{n}\\sum_{i=1}^{n}\\hat{u}_i$). A line I drew across the page: ---. Drawings or graphs: [diagram: what it shows]. A question I wrote (Q:, Question, Exercise, or ending in ?): \"▸ the question\", with its working/answer on the lines under it indented by two spaces. "+
   "- A word you genuinely can't read: [?].";
 }
 function diaryPrompt(n, of) {
@@ -311,6 +306,12 @@ function parse(md) {
       if (e.trim()) out.push({ type: "equation", text: e.trim() });
       i++; continue;
     }
+    if ((m = t.match(/^(?:▸|>\s*\?|\?\?)\s*(.+)$/))) {
+      var inner = []; i++;
+      while (i < lines.length && (/^(\s{2,}|\t)/.test(lines[i]) || (!lines[i].trim() && i + 1 < lines.length && /^(\s{2,}|\t)/.test(lines[i + 1])))) { inner.push(lines[i].replace(/^(\s{2}|\t)/, "")); i++; }
+      out.push({ type: "toggle", text: m[1], children: parse(inner.join("\n")) });
+      continue;
+    }
     if (/^(-{3,}|_{3,}|\*{3,})$/.test(t)) out.push({ type: "divider" });
     else if ((m = t.match(/^(#{2,4})\s+(.*)$/))) out.push({ type: "h" + m[1].length, text: m[2] });
     else if ((m = t.match(/^#\s+(.*)$/))) out.push({ type: "h2", text: m[1] });
@@ -341,6 +342,7 @@ function render() {
     h += '<div class="t">' + esc("Week " + ($("week").value || "?") + ": " + ($("title").value || "…")) + "</div>";
     parse($("md").value).forEach(function (b) {
       var ind = b.depth ? ' style="margin-left:' + b.depth * 22 + 'px"' : "";
+      if (b.type === "toggle") { h += '<details class="tg" open><summary>' + htmlPieces(b.text) + "</summary>" + b.children.map(function (c) { return c.type === "equation" ? '<span class="beq">' + esc(c.text) + "</span>" : c.type === "bullet" || c.type === "number" ? "<ul><li>" + htmlPieces(c.text) + "</li></ul>" : c.type === "def" ? '<p><span class="term">' + esc(c.term) + "</span> " + htmlPieces(c.text) + "</p>" : "<p>" + htmlPieces(c.text || "") + "</p>"; }).join("") + "</details>"; return; }
       if (/^h[234]$/.test(b.type)) h += "<" + b.type + ">" + htmlPieces(b.text) + "</" + b.type + ">";
       else if (b.type === "bullet") h += "<ul" + ind + "><li>" + htmlPieces(b.text) + "</li></ul>";
       else if (b.type === "number") h += "<ol" + ind + "><li>" + htmlPieces(b.text) + "</li></ol>";
@@ -371,11 +373,30 @@ function rich(s, extra) {
   });
   return out.length ? out : [{ type: "text", text: { content: "" } }];
 }
+// a parsed block back to one line (for what's inside a toggle)
+function toLine(c) {
+  if (c.type === "equation") return "$$" + c.text + "$$";
+  if (c.type === "bullet") return "- " + c.text;
+  if (c.type === "number") return "1. " + c.text;
+  if (c.type === "def") return "**" + c.term + "** " + c.text;
+  if (c.type === "divider") return "---";
+  if (c.type === "diagram") return "[diagram: " + c.text + "]";
+  if (/^h[234]$/.test(c.type)) return "#### " + c.text;
+  return c.text || "";
+}
 var blank = function () { return { object: "block", type: "paragraph", paragraph: { rich_text: [] } }; };
 function noteBlocks(md) {
   var out = [], stack = [];
   parse(md).forEach(function (b, idx) {
     var blk;
+    if (b.type === "toggle") {
+      stack = [];
+      var kids = noteBlocks(b.children.map(function (c) { return c.type === "bullet" || c.type === "number" ? Object.assign({}, c, { depth: 0 }) : c; }).map(toLine).join("\n"))
+        .filter(function (k) { return !(k.type === "paragraph" && !k.paragraph.rich_text.length); })
+        .map(function (k) { var t = k.type; if (k[t] && k[t].children) delete k[t].children; return k; });
+      out.push({ object: "block", type: "toggle", toggle: { rich_text: rich(b.text), children: kids } });
+      return;
+    }
     if (/^h[234]$/.test(b.type)) {
       var key = "heading_" + b.type.slice(1);
       if (out.length) out.push(blank());                       // an empty line before each heading, like your pages
