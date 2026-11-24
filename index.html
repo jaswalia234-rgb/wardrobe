@@ -130,6 +130,11 @@
       <button class="round" onclick="clearAll()"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3"/></svg>clear</button>
     </div>
 
+    <div id="wash-wrap" class="card" style="display:none; flex-direction:column; gap:10px">
+      <div style="display:flex; justify-content:space-between; align-items:center"><span class="label">in the wash · tap when clean</span><button class="chip" onclick="allClean()">all clean</button></div>
+      <div class="chips" id="wash"></div>
+    </div>
+
     <div id="recent-wrap" style="display:none; flex-direction:column; gap:8px">
       <span class="label">wear again</span>
       <div class="recent" id="recent"></div>
@@ -266,8 +271,14 @@
           <span class="nm">${esc(it.name)}</span>
           <button class="w" title="${inWash(it) ? "it's clean" : "in the wash"}" onclick="event.stopPropagation(); wash('${it.id}')"><svg class="i" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11a2 2 0 0 1-2 1.7h-9a2 2 0 0 1-2-1.7zM4 8l2-4h12l2 4M9 13c1 1 2 1 3 0s2-1 3 0"/></svg></button>
         </div>`).join("") : `<div class="none">no ${TABS.find((t) => t[0] === tab)[1]} here${filterCount() ? " with these filters" : ""}</div>`;
-      drawSlots(); drawCanvas();
+      drawSlots(); drawCanvas(); drawWash();
     }
+    function drawWash() {
+      const dirty = items.filter(inWash);
+      $("wash-wrap").style.display = dirty.length ? "flex" : "none";
+      $("wash").innerHTML = dirty.map((it) => `<button class="chip" onclick="wash('${it.id}')">${esc(it.name)} <span style="margin-left:6px; opacity:.6">✓ clean</span></button>`).join("");
+    }
+    async function allClean() { const dirty = items.filter(inWash); for (const it of dirty) await wash(it.id); toast(`${dirty.length} thing${dirty.length === 1 ? "" : "s"} clean ✓`); }
 
     function drawSlots() {
       const order = sel.dresses ? ["dresses", "shoes", "outerwear"] : ["top", "bottom", "shoes", "outerwear"];
@@ -289,16 +300,73 @@
     }
     function clearAll() { sel = { top: null, bottom: null, dresses: null, shoes: null, outerwear: null }; draw(); }
 
-    // a whole outfit from your clean clothes (with the filters you've got on)
+// ---------- outfit ideas that actually go together ----------
+    const NEUTRAL = /black|white|cream|ivory|off.?white|grey|gray|charcoal|beige|tan|camel|brown|navy|denim|khaki|nude|stone|silver|oat/;
+    const FAMILY = (c) => /red|burgundy|maroon|wine/.test(c) ? "red" : /pink|rose|blush/.test(c) ? "pink" : /blue|denim|navy|cobalt/.test(c) ? "blue" : /green|sage|olive|khaki|mint/.test(c) ? "green" : /purple|lilac|lavender|plum/.test(c) ? "purple" : /yellow|mustard|gold/.test(c) ? "yellow" : /orange|rust|peach/.test(c) ? "orange" : "other";
+    const loud = (it) => (it.colors || []).some((c) => !NEUTRAL.test(c));
+    const has = (it, re) => (it.tags || []).some((t) => re.test(t)) || re.test(it.name || "");
+    function outfitScore(o, temp) {
+      const parts = [o.top, o.bottom, o.dress, o.layer, o.shoes].filter(Boolean);
+      let s = 0;
+      // colour: one statement piece with neutrals looks best; two clashing brights don't
+      const bright = parts.filter(loud);
+      if (bright.length <= 1) s += 3;
+      else { const fams = new Set(bright.flatMap((p) => p.colors.filter((c) => !NEUTRAL.test(c)).map(FAMILY))); s += fams.size === 1 ? 1 : -4 * (fams.size - 1); }
+      // vibe: don't mix loungewear with going-out pieces
+      const lounge = parts.some((p) => has(p, /lounge|pj|pyjama|jogger|sweatpant/)), club = parts.some((p) => has(p, /club|going out|party/));
+      if (lounge && club) s -= 6;
+      const comfy = parts.filter((p) => has(p, /comfy|lounge|hoodie|jogger/)).length;
+      if (comfy && comfy < parts.length - 1 && club) s -= 2;
+      // joggers / loungewear bottoms go with comfy tops, not dressy ones
+      if (o.top && o.bottom && has(o.bottom, /jogger|lounge|sweatpant/) && !has(o.top, /comfy|hoodie|lounge|sweat/)) s -= 3;
+      // hoodies go with jeans/joggers/shorts better than skirts
+      if (o.top && o.bottom && has(o.top, /hoodie/) && has(o.bottom, /skirt/)) s -= 1;
+      // weather
+      if (temp != null) {
+        if (temp < 12) { s += o.layer ? 3 : -3; parts.forEach((p) => { if (has(p, /winter|long.?sleeve|sweater|jumper|wool/)) s += 1; if (has(p, /no sleeves|shorts|short.?sleeve/)) s -= 2; }); }
+        if (temp > 20) { if (o.layer) s -= 2; parts.forEach((p) => { if (has(p, /winter|wool/)) s -= 2; }); }
+      }
+      // a matching set should stay together
+      const sets = parts.filter((p) => has(p, /matching set/));
+      if (sets.length === 1) s -= 1;
+      return s;
+    }
+    function suggestOutfit(items, logged, temp, seed) {
+      let r = seed || Math.random() * 1e9;
+      const rnd = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+      const clean = items.filter((i) => !/dirty|wash|laundry/.test(i.status || ""));
+      const by = (re) => clean.filter((i) => re.test(i.slot || i.category || ""));
+      const tops = by(/^top/), bottoms = by(/^bottom/), dresses = by(/^dress/), layers = clean.filter((i) => /outer|layer/.test(i.slot || i.category || "") || i.layer), shoes = by(/^shoe/);
+      // 1) mostly: an outfit you've actually worn (not this week), if its pieces are clean
+      const now = Date.now(), byId = {}; items.forEach((i) => { byId[i.id] = i; if (i.alt) byId[i.alt] = i; });
+      const past = (logged || []).filter((o) => o.items && o.items.length >= 2 && (!o.date || now - Date.parse(o.date) > 6 * 86400000))
+        .map((o) => ({ o, pieces: o.items.map((id) => byId[id]).filter(Boolean) }))
+        .filter((x) => x.pieces.length >= 2 && x.pieces.every((p) => !/dirty|wash|laundry/.test(p.status || "")));
+      if (past.length && rnd() < 0.6) {
+        const scored = past.map((x) => { const o = {}; x.pieces.forEach((p) => { const sl = p.slot || p.category; if (/^top/.test(sl) && !o.top) o.top = p; else if (/^bottom/.test(sl)) o.bottom = p; else if (/^dress/.test(sl)) o.dress = p; else if (/outer|layer/.test(sl)) o.layer = p; else if (/^shoe/.test(sl)) o.shoes = p; else if (/^top/.test(sl)) o.layer = p; }); return { o, s: outfitScore(o, temp) + 2, from: x.o }; }).sort((a, b) => b.s - a.s);
+        const pick = scored[Math.floor(rnd() * Math.min(3, scored.length))];
+        return Object.assign(pick.o, { fromLog: pick.from.date || true });
+      }
+      // 2) otherwise: try lots of combinations and pick from the best few
+      const one = (l) => l.length ? l[Math.floor(rnd() * l.length)] : null;
+      const tries = [];
+      for (let k = 0; k < 400; k++) {
+        const useDress = dresses.length && (tops.length === 0 || rnd() < 0.15);
+        const o = useDress ? { dress: one(dresses) } : { top: one(tops), bottom: one(bottoms) };
+        if (shoes.length) o.shoes = one(shoes);
+        if (layers.length && (temp == null || temp < 16 || rnd() < 0.3)) { const l = one(layers.filter((x) => !o.top || x.id !== o.top.id)); if (l) o.layer = l; }
+        tries.push({ o, s: outfitScore(o, temp) });
+      }
+      tries.sort((a, b) => b.s - a.s);
+      return tries[Math.floor(rnd() * Math.min(5, tries.length))].o;
+    }
+    
+    // a whole outfit that goes together: often one you've worn, otherwise the best of hundreds of tries
     function shuffle() {
-      const pool = (t) => items.filter((i) => inTab(i, t) && !inWash(i) && matches(i, t, false));
-      const one = (l) => l[Math.floor(Math.random() * l.length)] || null;
-      const dresses = pool("dresses"), useDress = dresses.length && Math.random() < 0.2;
-      const next = { top: null, bottom: null, dresses: null, shoes: one(pool("shoes")), outerwear: null };
-      if (useDress) next.dresses = one(dresses); else { next.top = one(pool("top")); next.bottom = one(pool("bottom")); }
-      const cold = weather && weather.temp < 14;
-      if (cold) next.outerwear = one(pool("outerwear").filter((i) => !next.top || i.id !== next.top.id));
-      sel = next; draw();
+      const pool = items.filter((i) => matches(i, i.category, false));
+      const o = suggestOutfit(pool.length ? pool : items, recent, weather ? weather.temp : null);
+      sel = { top: o.top || null, bottom: o.bottom || null, dresses: o.dress || null, shoes: o.shoes || null, outerwear: o.layer || null };
+      draw(); toast(o.fromLog ? "an outfit you've worn before ✓" : "a new combination ✓");
     }
 
     // clean ⇄ in the wash (saved to Notion)
