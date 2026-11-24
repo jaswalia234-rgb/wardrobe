@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ink → notion</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ink">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#221A1D">
+<link rel="manifest" href="ink.webmanifest">
+<link rel="apple-touch-icon" href="ink-180.png">
+<link rel="icon" href="ink-192.png">
+<style>
+:root{
+  --bg:#F5EFEA;--surf:#FFFFFF;--surf2:#EFE6E1;--surf3:#E4D8D2;--text:#2A1F23;--text2:#7A676B;--text3:#A39297;
+  --acc:#C98A83;--acc2:#B9786F;--ink:#FFFFFF;--brown:#8A5A44;--warn:#B9786F;--ok:#6E9A72;
+  color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#221A1D;--surf:#2E2428;--surf2:#3A2E33;--surf3:#47383E;--text:#F3E8E4;--text2:#B5A2A2;--text3:#7F6D70;
+  --acc:#E7A9A2;--acc2:#F0BCB5;--ink:#2A1F23;--brown:#D4A58C;--warn:#F2A6A6;--ok:#9CC49F;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#221A1D;--surf:#2E2428;--surf2:#3A2E33;--surf3:#47383E;--text:#F3E8E4;--text2:#B5A2A2;--text3:#7F6D70;
+  --acc:#E7A9A2;--acc2:#F0BCB5;--ink:#2A1F23;--brown:#D4A58C;--warn:#F2A6A6;--ok:#9CC49F;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:860px;margin:0 auto;padding:18px 16px 40px;display:flex;flex-direction:column;gap:14px}
+h1{margin:4px 2px 0;font-size:28px;font-weight:650;letter-spacing:-.3px}
+.sub{margin:2px 2px 0;font-size:14px;color:var(--text2)}
+.card{background:var(--surf);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.label{font-size:12.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text2)}
+.seg{display:flex;gap:4px;background:var(--surf2);border-radius:20px;padding:4px}
+.seg button{flex:1;border:0;background:transparent;border-radius:16px;padding:9px 12px;font-weight:600;color:var(--text2)}
+.seg button.on{background:var(--surf);color:var(--text);box-shadow:0 2px 6px rgba(0,0,0,.15)}
+.drop{border:2px dashed var(--surf3);border-radius:18px;padding:22px;text-align:center;color:var(--text2);font-size:15px}
+.drop.over{border-color:var(--acc);color:var(--text)}
+.drop b{color:var(--text)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap}
+.thumbs div{position:relative;width:74px;height:96px;border-radius:10px;overflow:hidden;background:var(--surf2)}
+.thumbs img{width:100%;height:100%;object-fit:cover}
+.thumbs button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:11px;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:22px;padding:0}
+.big{border:0;border-radius:24px;padding:13px 18px;background:var(--acc);color:var(--ink);font-weight:700;font-size:16px}
+.big:hover{background:var(--acc2)}
+.big:disabled{opacity:.5;cursor:default}
+.ghost{border:1px solid var(--surf3);background:transparent;border-radius:20px;padding:9px 14px;font-weight:600;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.field{border:0;background:var(--surf2);border-radius:14px;padding:10px 12px;font-size:15px;outline:none;min-width:0}
+.field:focus{box-shadow:0 0 0 2px var(--acc)}
+textarea.field{width:100%;min-height:260px;font:13.5px/1.5 ui-monospace,Menlo,monospace;resize:vertical}
+.status{font-size:14.5px;color:var(--text2);min-height:20px}
+.status.err{color:var(--warn)}
+.status.ok{color:var(--ok)}
+.bar{height:8px;border-radius:4px;background:var(--surf2);overflow:hidden;display:none}
+.bar div{height:100%;width:0;background:var(--acc);transition:width .4s}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--surf3);background:transparent;border-radius:15px;padding:5px 11px;font-size:13px;font-weight:600;color:var(--text2)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--ink)}
+.unsure{font-size:14px;color:var(--warn)}
+.hide{display:none!important}
+/* preview: looks like your Notion pages */
+.prev{background:var(--bg);border-radius:16px;padding:14px 16px;max-height:520px;overflow:auto}
+.prev .t{font-size:24px;font-weight:700;margin:0 0 8px}
+.prev h2,.prev h3,.prev h4{color:var(--brown);margin:14px 0 4px;font-weight:650}
+.prev h2{font-size:21px}.prev h3{font-size:18px}.prev h4{font-size:16px}
+.prev p{margin:4px 0}
+.prev ul{margin:2px 0;padding-left:22px}
+.prev ol{margin:2px 0;padding-left:22px}
+.prev .term{color:var(--brown);font-weight:700}
+.prev .eq{font:13px ui-monospace,Menlo,monospace;background:var(--surf2);border-radius:6px;padding:1px 5px}
+.prev .beq{display:block;text-align:center;font:13.5px ui-monospace,Menlo,monospace;background:var(--surf2);border-radius:10px;padding:8px;margin:6px 0}
+.prev hr{border:0;border-top:1px solid var(--surf3);margin:12px 0}
+.prev .dia{font-style:italic;color:var(--text2)}
+.prev .pink{color:#C77C93}
+.split{display:grid;gap:12px}
+@media (min-width:760px){.split{grid-template-columns:1fr 1fr}}
+a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="wrap hide" id="lock" style="min-height:80vh;justify-content:center">
+  <h1>ink → notion ✏️</h1>
+  <div class="card"><span class="label">passcode</span>
+    <input class="field" id="passIn" type="password" placeholder="the INK_PASS you set in Cloudflare" autocomplete="current-password">
+    <button class="big" id="passGo">open</button><div class="status" id="passMsg"></div></div>
+</div>
+<div class="wrap" id="app">
+  <div>
+    <h1>ink → notion ✏️</h1>
+    <div class="sub" id="sub">handwritten notes and diary pages, straight into your Notion</div>
+  </div>
+
+  <div class="card">
+    <div class="seg" id="mode"><button data-m="notes" class="on">lecture notes</button><button data-m="diary">diary</button></div>
+    <label class="drop" id="drop"><input type="file" id="file" accept="application/pdf,image/*" multiple hidden>
+      <b>add your pages</b><br>a GoodNotes PDF or photos · tap, or drop them here</label>
+    <div class="thumbs" id="thumbs"></div>
+    <button class="big" id="read" disabled>read my handwriting</button>
+    <div class="bar" id="bar"><div id="fill"></div></div>
+    <div class="row"><div class="status" id="status"></div><button class="ghost hide" id="stop">stop</button></div>
+  </div>
+
+  <div class="card hide" id="result">
+    <!-- notes details -->
+    <div id="notesMeta" class="row">
+      <span class="label" style="width:100%">page</span>
+      <span>Week</span><input class="field" id="week" inputmode="numeric" style="width:64px">
+      <input class="field" id="title" placeholder="lecture title" style="flex:1;min-width:180px">
+      <select class="field" id="course"><option value="">course…</option><option>EC2A1</option><option>EC2B1</option><option>EC2C1</option><option>ST206</option><option>FM214</option></select>
+    </div>
+    <!-- diary details -->
+    <div id="diaryMeta" class="hide" style="display:flex;flex-direction:column;gap:10px">
+      <div class="row"><span class="label">day</span><input class="field" type="date" id="date"></div>
+      <div class="row"><span class="label">mood</span><div class="chips" id="moods"></div></div>
+    </div>
+    <div class="unsure hide" id="unsure"></div>
+    <div class="split">
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="label">edit</span><textarea class="field" id="md" spellcheck="false"></textarea></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="label">how it'll look</span><div class="prev" id="prev"></div></div>
+    </div>
+    <button class="big" id="save">save to notion</button>
+    <div class="status" id="saveStatus"></div>
+    <div class="row hide" id="copyRow"><button class="ghost" id="copy">copy instead</button><span class="status" id="copyNote"></span></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+// ---------- your worker (keys live there, never in this page) ----------
+var API = "https://wardrobe-proxy.jaswalia234.workers.dev";
+var COURSES = ["EC2A1", "EC2B1", "EC2C1", "ST206", "FM214"];
+var MOODS = ["nauseous", "grateful", "happy", "unsure", "upset - no reason", "busy", "philosophical"];
+var $ = function (id) { return document.getElementById(id); };
+var mode = "notes", pages = [], moods = [], ctl = null, PASS = "";
+try { PASS = localStorage.getItem("ink-pass") || ""; } catch (e) {}
+function api(path, body, signal) {
+  return fetch(API + path, { method: "POST", headers: { "Content-Type": "application/json", "X-Ink-Pass": PASS }, body: JSON.stringify(body || {}), signal: signal })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw { code: r.status, message: j.message || ("error " + r.status) }; return j; }); });
+}
+function showLock(msg) { $("lock").classList.remove("hide"); $("app").classList.add("hide"); $("passMsg").textContent = msg || ""; }
+function unlock() {
+  return api("/ink/ping").then(function (r) { $("lock").classList.add("hide"); $("app").classList.remove("hide"); $("sub").textContent = "reads with: " + (r.readers || []).join(", ") + " · free"; refreshRead(); })
+    .catch(function (e) { showLock(e.code === 401 ? "that passcode didn't work" : "couldn't reach your worker: " + (e.message || e)); });
+}
+$("passGo").onclick = function () { PASS = $("passIn").value.trim(); try { localStorage.setItem("ink-pass", PASS); } catch (e) {} unlock(); };
+$("passIn").onkeydown = function (e) { if (e.key === "Enter") $("passGo").click(); };
+if (PASS) unlock(); else showLock();
+
+// ---------- mode ----------
+document.querySelectorAll("#mode button").forEach(function (b) {
+  b.onclick = function () {
+    mode = b.dataset.m;
+    document.querySelectorAll("#mode button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    $("result").classList.add("hide"); setStatus("");
+  };
+});
+
+// ---------- pages in ----------
+var drop = $("drop");
+["dragenter", "dragover"].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("over"); }); });
+["dragleave", "drop"].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("over"); }); });
+drop.addEventListener("drop", function (ev) { addFiles(ev.dataTransfer.files); });
+$("file").onchange = function () { addFiles(this.files); this.value = ""; };
+
+function toJpeg(source, w, h) {
+  var scale = Math.min(1, 1600 / Math.max(w, h)), c = document.createElement("canvas");
+  c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+  var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(source, 0, 0, c.width, c.height);
+  return new Promise(function (res) { c.toBlob(function (b) { res(b); }, "image/jpeg", 0.85); });
+}
+async function addFiles(list) {
+  setStatus("getting your pages ready…");
+  for (var i = 0; i < list.length; i++) {
+    var f = list[i];
+    try {
+      if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+        if (!window.pdfjsLib) throw new Error("couldn't open PDFs here");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        var pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+        for (var p = 1; p <= pdf.numPages; p++) {
+          var pg = await pdf.getPage(p), vp = pg.getViewport({ scale: 2 }), c = document.createElement("canvas");
+          c.width = vp.width; c.height = vp.height;
+          await pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+          pages.push(await toJpeg(c, c.width, c.height));
+        }
+      } else if (/^image\//.test(f.type)) {
+        var bmp = await createImageBitmap(f);
+        pages.push(await toJpeg(bmp, bmp.width, bmp.height));
+      }
+    } catch (e) { setStatus("couldn't read " + f.name + ": " + (e.message || e), true); }
+  }
+  drawThumbs(); setStatus(pages.length ? pages.length + " page" + (pages.length === 1 ? "" : "s") + " ready" : "");
+}
+function drawThumbs() {
+  var t = $("thumbs"); t.innerHTML = "";
+  pages.forEach(function (b, i) {
+    var d = document.createElement("div"), im = document.createElement("img"), x = document.createElement("button");
+    im.src = URL.createObjectURL(b); x.textContent = "✕"; x.setAttribute("aria-label", "remove page");
+    x.onclick = function (ev) { ev.preventDefault(); pages.splice(i, 1); drawThumbs(); refreshRead(); };
+    d.appendChild(im); d.appendChild(x); t.appendChild(d);
+  });
+  refreshRead();
+}
+function refreshRead() { $("read").disabled = !pages.length; }
+
+function setStatus(t, err) { var s = $("status"); s.textContent = t; s.className = "status" + (err ? " err" : ""); }
+function bar(p) { $("bar").style.display = p == null ? "none" : "block"; $("fill").style.width = (p || 0) + "%"; }
+
+// ---------- the instructions Claude follows ----------
+function notesPrompt(n, of) {
+  return "This is a photo of page " + n + " of " + of + " of my handwritten university lecture notes. Transcribe EXACTLY what I wrote. Do not add, explain, summarise or reword anything; only fix obvious spelling slips or misreads.\n\n" +
+  "Reply with ONLY a JSON object, no code fences: {\"week\": \"the week number if the notes say it, else empty\", \"lecture\": \"the lecture's title or topic as the notes name it, else empty\", \"course\": \"one of " + COURSES.join(", ") + " if the notes clearly belong to one, else empty\", \"markdown\": \"the notes\", \"unsure\": [\"any words or symbols you weren't sure about\"]}\n\n" +
+  "Rules for \"markdown\" (my Notion style):\n" +
+  "- Main section headings: \"## Heading:\"  · sub-sections: \"### Heading:\"  · smaller sub-points or numbered steps: \"#### 1. Step:\". Headings end with a colon.\n" +
+  "- A definition written as \"Term: explanation\" goes on its own line as \"**Term:** explanation\".\n" +
+  "- Words I underlined, boxed or emphasised: **bold**.\n" +
+  "- Points: \"- point\". Anything indented, or written after an arrow (→ or ↳) under a point, is a nested bullet: two spaces per level, e.g. \"  - sub-point\".\n" +
+  "- ALL maths as LaTeX, never plain text or unicode: inline inside single $...$ (e.g. $\\hat{\\theta}_n$, $H_0$, $\\hat{\\beta}_1$, $\\frac{1}{n}\\sum_{i=1}^{n}\\hat{u}_i=0$, $(X'X)^{-1}X'y$). Equations or derivations on their own line: one per line as $$...$$, in my order.\n" +
+  "- A line I drew across the page: \"---\".\n" +
+  "- Worked examples: keep exactly, with every number and symbol as maths.\n" +
+  "- Drawings, graphs or diagrams: \"[diagram: what it shows]\".\n" +
+  "- A word you genuinely can't read: [?].";
+}
+function diaryPrompt(n, of) {
+  return "This is a photo of page " + n + " of " + of + " of my handwritten diary entry. Keep my exact words, slang, swearing, \"lol\", \"xx\", hashtags and jokes. Don't reword, shorten, summarise, censor, explain or add anything. Only: write in sentence case (a capital at the start of each sentence, \"I\" always capital, names capitalised); words I wrote in capitals for emphasis become FULL CAPS; fix obvious handwriting misreads and spelling slips (e.g. \"i're\" → \"I've\"); tidy punctuation so sentences read properly. Leave out any \"dear diary\" greeting.\n\n" +
+  "Reply with ONLY a JSON object, no code fences: {\"date\": \"the date written at the top left of the first page as YYYY-MM-DD (it's " + new Date().getFullYear() + "), else empty\", \"paragraphs\": [\"each paragraph I wrote, in order\"], \"mood\": [\"1 or 2 that fit, ONLY from: " + MOODS.join(", ") + "\"], \"unsure\": [\"any words you weren't sure about\"]}";
+}
+
+// ---------- read the handwriting ----------
+$("stop").onclick = function () { if (ctl) ctl.abort(); };
+function b64(blob) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(String(r.result).split(",")[1]); }; r.onerror = rej; r.readAsDataURL(blob); }); }
+$("read").onclick = async function () {
+  $("read").disabled = true; $("stop").classList.remove("hide"); bar(3);
+  var all = { week: "", lecture: "", course: "", date: "", md: [], paras: [], mood: [], unsure: [], fixed: [] }, used = {};
+  try {
+    for (var k = 0; k < pages.length; k++) {
+      ctl = new AbortController();
+      var start = Date.now(), base = (k / pages.length) * 95;
+      setStatus("reading page " + (k + 1) + " of " + pages.length + "…");
+      var tick = setInterval(function () { var f = Math.min(0.95, (Date.now() - start) / 45000); bar(base + f * (95 / pages.length)); }, 600);
+      var r;
+      try { r = await api("/ink/read", { mode: mode, prompt: (mode === "notes" ? notesPrompt : diaryPrompt)(k + 1, pages.length), image: await b64(pages[k]) }, ctl.signal); }
+      finally { clearInterval(tick); }
+      used[r.reader] = 1; r = r.result || {};
+      if (mode === "notes") {
+        if (!all.week && r.week) all.week = String(r.week).replace(/\D/g, "");
+        if (!all.lecture && r.lecture) all.lecture = String(r.lecture);
+        if (!all.course && r.course && COURSES.indexOf(String(r.course).toUpperCase()) >= 0) all.course = String(r.course).toUpperCase();
+        if (r.markdown) all.md.push(String(r.markdown));
+      } else {
+        if (!all.date && /^\d{4}-\d\d-\d\d$/.test(r.date || "")) all.date = r.date;
+        (r.paragraphs || []).forEach(function (p) { if (String(p).trim()) all.paras.push(String(p).trim()); });
+        (r.mood || []).forEach(function (m) { m = String(m).toLowerCase(); if (MOODS.indexOf(m) >= 0 && all.mood.indexOf(m) < 0) all.mood.push(m); });
+      }
+      (r.unsure || []).forEach(function (u) { if (u) all.unsure.push(String(u)); });
+      (r.fixed || []).forEach(function (u) { if (u) all.fixed.push(String(u)); });
+    }
+    bar(100); setStatus("done (read by " + Object.keys(used).join(", ") + ") · check it below, then save");
+    showResult(all);
+  } catch (e) {
+    bar(null);
+    setStatus(e && e.name === "AbortError" ? "stopped" : e && e.code === 401 ? "passcode stopped working: reload" : "that didn't work: " + ((e && e.message) || e), true);
+  } finally { $("read").disabled = false; $("stop").classList.add("hide"); ctl = null; }
+};
+
+// ---------- review ----------
+function showResult(a) {
+  $("result").classList.remove("hide");
+  $("notesMeta").classList.toggle("hide", mode !== "notes");
+  $("diaryMeta").classList.toggle("hide", mode !== "diary");
+  if (mode === "notes") {
+    $("week").value = a.week || ""; $("title").value = titleCase(a.lecture || ""); $("course").value = a.course || "";
+    $("md").value = a.md.join("\n\n---\n\n").trim();
+  } else {
+    var d = new Date(); $("date").value = a.date || (d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()));
+    moods = a.mood.slice(0, 2); drawMoods();
+    $("md").value = a.paras.join("\n\n");
+  }
+  var fx = a.fixed || [];
+  $("unsure").classList.toggle("hide", !a.unsure.length && !fx.length);
+  $("unsure").textContent = (a.unsure.length ? "not sure about: " + a.unsure.join(" · ") + " (check these)" : "") + (a.unsure.length && fx.length ? "\n" : "") + (fx.length ? "fixed using context: " + fx.join(" · ") : "");
+  $("unsure").style.whiteSpace = "pre-line";
+  $("saveStatus").textContent = ""; $("copyRow").classList.add("hide");
+  render();
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function drawMoods() {
+  var c = $("moods"); c.innerHTML = "";
+  MOODS.forEach(function (m) {
+    var b = document.createElement("button"); b.className = "chip" + (moods.indexOf(m) >= 0 ? " on" : ""); b.textContent = m;
+    b.onclick = function () { var i = moods.indexOf(m); if (i >= 0) moods.splice(i, 1); else moods.push(m); drawMoods(); };
+    c.appendChild(b);
+  });
+}
+var pad = function (n) { return String(n).padStart(2, "0"); };
+function titleCase(s) { var small = /^(a|an|and|as|at|but|by|for|in|of|on|or|the|to|vs|via)$/i; return s.split(" ").map(function (w, i) { return i && small.test(w) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1); }).join(" "); }
+$("md").oninput = render; $("title").oninput = render; $("week").oninput = render;
+
+// markdown → a list of block descriptions (used for both the preview and Notion)
+function parse(md) {
+  var out = [], lines = String(md).replace(/\r/g, "").split("\n"), i = 0;
+  while (i < lines.length) {
+    var raw = lines[i], t = raw.trim(), m;
+    if (!t) { i++; continue; }
+    if (t.indexOf("$$") === 0) {
+      var e = t.slice(2);
+      if (e.length >= 2 && e.slice(-2) === "$$") e = e.slice(0, -2);
+      else { var body = [e]; i++; while (i < lines.length && lines[i].indexOf("$$") < 0) body.push(lines[i++]); if (i < lines.length) body.push(lines[i].replace(/\$\$.*$/, "")); e = body.join("\n"); }
+      if (e.trim()) out.push({ type: "equation", text: e.trim() });
+      i++; continue;
+    }
+    if (/^(-{3,}|_{3,}|\*{3,})$/.test(t)) out.push({ type: "divider" });
+    else if ((m = t.match(/^(#{2,4})\s+(.*)$/))) out.push({ type: "h" + m[1].length, text: m[2] });
+    else if ((m = t.match(/^#\s+(.*)$/))) out.push({ type: "h2", text: m[1] });
+    else if ((m = raw.match(/^(\s*)[-*•]\s+(.*)$/))) out.push({ type: "bullet", text: m[2], depth: Math.min(2, Math.floor(m[1].replace(/\t/g, "  ").length / 2)) });
+    else if ((m = raw.match(/^(\s*)\d+[.)]\s+(.*)$/))) out.push({ type: "number", text: m[2], depth: Math.min(2, Math.floor(m[1].replace(/\t/g, "  ").length / 2)) });
+    else if ((m = t.match(/^\[diagram:\s*(.*)\]$/i))) out.push({ type: "diagram", text: m[1] });
+    else if ((m = t.match(/^\*\*([^*]+?:)\*\*\s*(.*)$/))) out.push({ type: "def", term: m[1], text: m[2] });
+    else out.push({ type: "para", text: t });
+    i++;
+  }
+  return out;
+}
+// "text with $maths$ and **bold**" → pieces
+function pieces(s) {
+  var out = [];
+  String(s).split(/(\$[^$\n]+?\$)/g).forEach(function (p) {
+    if (!p) return;
+    if (/^\$[^$]+\$$/.test(p)) { out.push({ eq: p.slice(1, -1).trim() }); return; }
+    p.split(/(\*\*[^*]+\*\*)/g).forEach(function (q) { if (!q) return; if (/^\*\*[^*]+\*\*$/.test(q)) out.push({ text: q.slice(2, -2), bold: true }); else out.push({ text: q }); });
+  });
+  return out;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function htmlPieces(s) { return pieces(s).map(function (p) { return p.eq != null ? '<span class="eq">' + esc(p.eq) + "</span>" : p.bold ? "<b>" + esc(p.text) + "</b>" : esc(p.text); }).join(""); }
+function render() {
+  var h = "";
+  if (mode === "notes") {
+    h += '<div class="t">' + esc("Week " + ($("week").value || "?") + ": " + ($("title").value || "…")) + "</div>";
+    parse($("md").value).forEach(function (b) {
+      var ind = b.depth ? ' style="margin-left:' + b.depth * 22 + 'px"' : "";
+      if (/^h[234]$/.test(b.type)) h += "<" + b.type + ">" + htmlPieces(b.text) + "</" + b.type + ">";
+      else if (b.type === "bullet") h += "<ul" + ind + "><li>" + htmlPieces(b.text) + "</li></ul>";
+      else if (b.type === "number") h += "<ol" + ind + "><li>" + htmlPieces(b.text) + "</li></ol>";
+      else if (b.type === "equation") h += '<span class="beq">' + esc(b.text) + "</span>";
+      else if (b.type === "divider") h += "<hr>";
+      else if (b.type === "diagram") h += '<p class="dia">[diagram: ' + esc(b.text) + "]</p>";
+      else if (b.type === "def") h += '<p><span class="term">' + esc(b.term) + "</span> " + htmlPieces(b.text) + "</p>";
+      else h += "<p>" + htmlPieces(b.text) + "</p>";
+    });
+  } else {
+    h += '<p class="pink">dear diary</p>';
+    $("md").value.split(/\n\s*\n/).forEach(function (p) { if (p.trim()) h += "<p>" + esc(p.trim()) + "</p>"; });
+  }
+  $("prev").innerHTML = h;
+}
+
+// ---------- Notion blocks ----------
+function rich(s, extra) {
+  var out = [];
+  pieces(s).forEach(function (p) {
+    if (p.eq != null) { out.push({ type: "equation", equation: { expression: p.eq } }); return; }
+    for (var i = 0; i < p.text.length; i += 1900) {
+      var o = { type: "text", text: { content: p.text.slice(i, i + 1900) } }, ann = Object.assign({}, extra || {});
+      if (p.bold) ann.bold = true;
+      if (Object.keys(ann).length) o.annotations = ann;
+      out.push(o);
+    }
+  });
+  return out.length ? out : [{ type: "text", text: { content: "" } }];
+}
+var blank = function () { return { object: "block", type: "paragraph", paragraph: { rich_text: [] } }; };
+function noteBlocks(md) {
+  var out = [], stack = [];
+  parse(md).forEach(function (b, idx) {
+    var blk;
+    if (/^h[234]$/.test(b.type)) {
+      var key = "heading_" + b.type.slice(1);
+      if (out.length) out.push(blank());                       // an empty line before each heading, like your pages
+      blk = { object: "block", type: key }; blk[key] = { rich_text: rich(b.text, { color: "brown" }) };
+    } else if (b.type === "bullet" || b.type === "number") {
+      var key2 = b.type === "bullet" ? "bulleted_list_item" : "numbered_list_item";
+      blk = { object: "block", type: key2 }; blk[key2] = { rich_text: rich(b.text) };
+      if (b.depth && stack[b.depth - 1]) { var par = stack[b.depth - 1], k = par.type; (par[k].children = par[k].children || []).push(blk); stack[b.depth] = blk; stack.length = b.depth + 1; return; }
+      stack = [blk];
+    } else if (b.type === "equation") blk = { object: "block", type: "equation", equation: { expression: b.text } };
+    else if (b.type === "divider") blk = { object: "block", type: "divider", divider: {} };
+    else if (b.type === "diagram") blk = { object: "block", type: "paragraph", paragraph: { rich_text: [{ type: "text", text: { content: "[diagram: " + b.text + "]" }, annotations: { italic: true } }] } };
+    else if (b.type === "def") blk = { object: "block", type: "paragraph", paragraph: { rich_text: [{ type: "text", text: { content: b.term + " " }, annotations: { bold: true, color: "brown" } }].concat(rich(b.text)) } };
+    else blk = { object: "block", type: "paragraph", paragraph: { rich_text: rich(b.text) } };
+    if (b.type !== "bullet" && b.type !== "number") stack = [];
+    out.push(blk);
+  });
+  return out;
+}
+
+// ---------- saving (through your worker) ----------
+function saveMsg(t, cls) { var s = $("saveStatus"); s.textContent = t; s.className = "status" + (cls ? " " + cls : ""); }
+$("save").onclick = async function () {
+  $("save").disabled = true;
+  try {
+    if (mode === "notes") {
+      var week = $("week").value.trim(), title = $("title").value.trim(), course = $("course").value;
+      if (!week || !title) { saveMsg("add the week number and lecture title first", "err"); return; }
+      var name = "Week " + week + ": " + title;
+      saveMsg("making “" + name + "”…");
+      var r = await api("/ink/notes", { name: name, course: course, blocks: noteBlocks($("md").value) });
+      doneMsg("saved “" + name + "”" + (course ? " · " + course : ""), r.url);
+    } else {
+      var date = $("date").value, paras = $("md").value.split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+      saveMsg("adding it to " + date + "…");
+      var d = await api("/ink/diary", { date: date, paragraphs: paras, moods: moods });
+      doneMsg("saved to " + date + (d.name ? " (“" + d.name + "”)" : "") + (d.mood ? " · mood: " + d.mood.join(", ") : "") + (d.ticked ? " · diary habit ticked ✓" : ""), d.url);
+    }
+  } catch (e) { saveMsg("Notion said: " + ((e && e.message) || e) + ". Nothing's lost: you can copy it instead.", "err"); $("copyRow").classList.remove("hide"); }
+  finally { $("save").disabled = false; }
+};
+function doneMsg(t, url) {
+  var s = $("saveStatus"); s.className = "status ok"; s.textContent = t + " ";
+  if (url && /^https:\/\//.test(url)) { var a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "open in notion"; s.appendChild(a); }
+}
+
+// ---------- copy instead ----------
+$("copy").onclick = function () {
+  var txt = mode === "notes" ? "Week " + $("week").value + ": " + $("title").value + ($("course").value ? " (" + $("course").value + ")" : "") + "\n\n" + $("md").value : $("md").value;
+  var done = function () { $("copyNote").textContent = "copied ✓ · paste it into Notion"; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { $("md").select(); $("copyNote").textContent = "select the text and copy it"; });
+  else { $("md").select(); $("copyNote").textContent = "select the text and copy it"; }
+};
+</script>
+</body>
+</html>
