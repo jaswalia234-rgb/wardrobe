@@ -211,8 +211,8 @@ function bar(p) { $("bar").style.display = p == null ? "none" : "block"; $("fill
 // ---------- the instructions Claude follows ----------
 function notesPrompt(n, of) {
   return "This is a photo of page " + n + " of " + of + " of my handwritten university lecture notes. Transcribe EXACTLY what I wrote. Do not add, explain, summarise or reword anything; only fix obvious spelling slips or misreads.\n\n" +
-  "Reply with ONLY a JSON object, no code fences: {\"week\": \"the week number if the notes say it, else empty\", \"lecture\": \"the lecture's title or topic as the notes name it, else empty\", \"course\": \"one of " + COURSES.join(", ") + " if the notes clearly belong to one, else empty\", \"markdown\": \"the notes\", \"unsure\": [\"any words or symbols you weren't sure about\"]}\n\n" +
-  "Rules for \"markdown\" (my Notion style):\n" +
+  "Reply in EXACTLY this plain-text format (no JSON, no code fences):\nWEEK: the week number if the notes say it, else none\nLECTURE: the lecture's title or topic as the notes name it, else none\nCOURSE: one of " + COURSES.join(", ") + " if the notes clearly belong to one, else none\nUNSURE: words or symbols you weren't sure about, separated by semicolons, else none\nNOTES:\nthe notes, on the following lines\n\n" +
+  "Rules for the NOTES (my Notion style):\n" +
   "- Main section headings: \"## Heading:\"  · sub-sections: \"### Heading:\"  · smaller sub-points or numbered steps: \"#### 1. Step:\". Headings end with a colon.\n" +
   "- A definition written as \"Term: explanation\" goes on its own line as \"**Term:** explanation\".\n" +
   "- Words I underlined, boxed or emphasised: **bold**.\n" +
@@ -225,7 +225,7 @@ function notesPrompt(n, of) {
 }
 function diaryPrompt(n, of) {
   return "This is a photo of page " + n + " of " + of + " of my handwritten diary entry. Keep my exact words, slang, swearing, \"lol\", \"xx\", hashtags and jokes. Don't reword, shorten, summarise, censor, explain or add anything. Only: write in sentence case (a capital at the start of each sentence, \"I\" always capital, names capitalised); words I wrote in capitals for emphasis become FULL CAPS; fix obvious handwriting misreads and spelling slips (e.g. \"i're\" → \"I've\"); tidy punctuation so sentences read properly. Leave out any \"dear diary\" greeting.\n\n" +
-  "Reply with ONLY a JSON object, no code fences: {\"date\": \"the date written at the top left of the first page as YYYY-MM-DD (it's " + new Date().getFullYear() + "), else empty\", \"paragraphs\": [\"each paragraph I wrote, in order\"], \"mood\": [\"1 or 2 that fit, ONLY from: " + MOODS.join(", ") + "\"], \"unsure\": [\"any words you weren't sure about\"]}";
+  "Reply in EXACTLY this plain-text format (no JSON, no code fences):\nDATE: the date written at the top left of the first page as YYYY-MM-DD (it's " + new Date().getFullYear() + "), else none\nMOOD: 1 or 2 that fit, separated by commas, ONLY from: " + MOODS.join(", ") + "\nUNSURE: words you weren't sure about, separated by semicolons, else none\nENTRY:\nthe entry on the following lines, with a blank line between paragraphs";
 }
 
 // ---------- read the handwriting ----------
